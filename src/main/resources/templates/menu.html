@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Menu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .menu-item-card {
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        .menu-item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .category-filter {
+            margin-bottom: 2rem;
+        }
+        .cart-summary {
+            position: sticky;
+            top: 20px;
+        }
+        .menu-item-image {
+            height: 200px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Taste Stop</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#cartModal">
+                            <i class="fas fa-shopping-cart"></i> My Cart
+                            <span class="badge bg-danger cart-count">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <h1 class="text-center mb-5">Our Menu</h1>
+        
+        <div class="category-filter text-center">
+            <button class="btn btn-outline-primary m-1 active" data-category="all">All</button>
+            <button class="btn btn-outline-primary m-1" data-category="starters">Starters</button>
+            <button class="btn btn-outline-primary m-1" data-category="main-courses">Main Courses</button>
+            <button class="btn btn-outline-primary m-1" data-category="desserts">Desserts</button>
+            <button class="btn btn-outline-primary m-1" data-category="beverages">Beverages</button>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-9">
+                <div class="row" id="menu-items">
+                    <div th:each="item : ${menuItems}" 
+                         th:data-category="${item.category}"
+                         class="col-md-6 col-lg-4 mb-4">
+                        <div class="card menu-item-card">
+                            <img th:src="${item.imageUrl}" 
+                                 th:alt="${item.name}" 
+                                 class="card-img-top menu-item-image">
+                            <div class="card-body">
+                                <h5 class="card-title" th:text="${item.name}">Item Name</h5>
+                                <p class="card-text" th:text="${item.description}">Item Description</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="h5 mb-0" th:text="${#numbers.formatDecimal(item.price, 1, 0)} + '₺'">₺0</span>
+                                    <button class="btn btn-primary add-to-cart" 
+                                            th:data-id="${item.id}"
+                                            th:data-name="${item.name}"
+                                            th:data-price="${item.price}">
+                                        <i class="fas fa-plus"></i> Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3">
+                <div class="card cart-summary">
+                    <div class="card-header">
+                        <h5 class="mb-0">Cart Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="cart-items"></div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>Total:</strong>
+                            <span id="cart-total">₺0</span>
+                        </div>
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-danger" id="clear-cart-btn" onclick="clearCart()">
+                                <i class="fas fa-trash-alt"></i> Clear Cart
+                            </button>
+                            <button class="btn btn-success" id="checkout-btn">
+                                Complete Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal fade" id="cartModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">My Cart</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal-cart-items"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger me-auto" onclick="clearCart()">
+                        <i class="fas fa-trash-alt"></i> Clear Cart
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="modal-checkout-btn">Complete Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        let cart = [];
+        
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                const price = parseFloat(this.dataset.price);
+                
+                const existingItem = cart.find(item => item.id === id);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({ id, name, price, quantity: 1 });
+                }
+                
+                updateCart();
+            });
+        });
+
+        function updateCart() {
+            const cartItems = document.getElementById('cart-items');
+            const modalCartItems = document.getElementById('modal-cart-items');
+            const cartCount = document.querySelector('.cart-count');
+            const cartTotal = document.getElementById('cart-total');
+            
+            let total = 0;
+            let count = 0;
+            
+            cartItems.innerHTML = '';
+            modalCartItems.innerHTML = '';
+            
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                count += item.quantity;
+                
+                // Cart Summary (Sidebar) HTML
+                cartItems.innerHTML += `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="btn-group btn-group-sm me-2">
+                                <button class="btn btn-outline-secondary" onclick="updateQuantity('${item.id}', -1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span class="btn btn-outline-secondary disabled">${item.quantity}</span>
+                                <button class="btn btn-outline-secondary" onclick="updateQuantity('${item.id}', 1)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <span>${item.name}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="me-2">₺${itemTotal}</span>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart('${item.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Cart Modal HTML
+                modalCartItems.innerHTML += `
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-0">${item.name}</h6>
+                            <small class="text-muted">₺${item.price} per item</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="btn-group btn-group-sm me-3">
+                                <button class="btn btn-outline-secondary" onclick="updateQuantity('${item.id}', -1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span class="btn btn-outline-secondary disabled">${item.quantity}</span>
+                                <button class="btn btn-outline-secondary" onclick="updateQuantity('${item.id}', 1)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="text-end" style="min-width: 80px;">
+                                <div class="fw-bold">₺${itemTotal}</div>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart('${item.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            cartCount.textContent = count;
+            cartTotal.textContent = `₺${total}`;
+        }
+
+        function updateQuantity(id, change) {
+            const item = cart.find(item => item.id === id);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(id);
+                } else {
+                    updateCart();
+                }
+            }
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCart();
+        }
+
+        document.querySelectorAll('.category-filter button').forEach(button => {
+            button.addEventListener('click', function() {
+                const category = this.dataset.category;
+                
+                document.querySelectorAll('.category-filter button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                document.querySelectorAll('#menu-items > div').forEach(item => {
+                    if (category === 'all' || item.dataset.category === category) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        document.getElementById('checkout-btn').addEventListener('click', function() {
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            alert('Your order has been received! Thank you.');
+            cart = [];
+            updateCart();
+        });
+
+        document.getElementById('modal-checkout-btn').addEventListener('click', function() {
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            alert('Your order has been received! Thank you.');
+            cart = [];
+            updateCart();
+            bootstrap.Modal.getInstance(document.getElementById('cartModal')).hide();
+        });
+
+        function clearCart() {
+            if (cart.length === 0) {
+                alert('Your cart is already empty!');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to clear your cart?')) {
+                cart = [];
+                updateCart();
+                // Eğer modal açıksa kapat
+                const cartModal = bootstrap.Modal.getInstance(document.getElementById('cartModal'));
+                if (cartModal) {
+                    cartModal.hide();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
