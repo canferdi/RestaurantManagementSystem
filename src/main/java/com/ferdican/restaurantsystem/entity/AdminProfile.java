@@ -21,4 +21,7 @@ public class AdminProfile {
     private String lastName;
     private String phoneNumber;
 
+    public AdminProfile(Users users) {
+        this.userId = users;
+    }
 }

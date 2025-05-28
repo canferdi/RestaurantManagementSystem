@@ -1,7 +1,6 @@
 package com.ferdican.restaurantsystem.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
