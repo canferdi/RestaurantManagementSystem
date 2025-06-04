@@ -35,7 +35,8 @@ public class WebSecurityConfig {
             "/*.css",
             "/*.js",
             "/*.js.map",
-            "/fonts**", "/favicon.ico", "/resources/**", "/error"};
+            "/fonts**", "/favicon.ico", "/resources/**", "/error",
+            "/images/**"};
 
     @Bean
     protected SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -45,6 +46,9 @@ public class WebSecurityConfig {
             auth.requestMatchers(publicUrl).permitAll();
             auth.anyRequest().authenticated();
         });
+
+        http.formLogin(form->form.loginPage("/login").permitAll()
+                .successHandler())
 
         return http.build();
     }
