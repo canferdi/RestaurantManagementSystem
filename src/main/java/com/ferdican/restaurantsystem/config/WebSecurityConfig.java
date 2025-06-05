@@ -1,7 +1,6 @@
 package com.ferdican.restaurantsystem.config;
 
 import com.ferdican.restaurantsystem.services.CustomUserDetailservice;
-import com.ferdican.restaurantsystem.util.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,39 +15,28 @@ import org.springframework.security.web.SecurityFilterChain;
 public class WebSecurityConfig {
 
     private final CustomUserDetailservice customUserDetailservice;
+    private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
     @Autowired
-    public WebSecurityConfig(CustomUserDetailservice customUserDetailservice) {
+    public WebSecurityConfig(CustomUserDetailservice customUserDetailservice,
+                             CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler) {
         this.customUserDetailservice = customUserDetailservice;
+        this.customAuthenticationSuccessHandler = customAuthenticationSuccessHandler;
     }
 
-    private String[] publicUrl = {"/",
-            "/global-search/**",
-            "/register",
-            "/register/**",
-            "/webjars/**",
-            "/resources/**",
-            "/assets/**",
-            "/css/**",
-            "/summernote/**",
-            "/js/**",
-            "/*.css",
-            "/*.js",
-            "/*.js.map",
-            "/fonts**", "/favicon.ico", "/resources/**", "/error",
-            "/images/**"};
+    private final String[] publicUrl = {"/", "/global-search/**", "/register", "/register/**", "/webjars/**", "/resources/**", "/assets/**", "/css/**", "/summernote/**", "/js/**", "/*.css", "/*.js", "/*.js.map", "/fonts**", "/favicon.ico", "/resources/**", "/error", "/images/**"};
 
     @Bean
     protected SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authenticationProvider(authenticationProvider());
 
-        http.authorizeHttpRequests(auth ->{
+        http.authorizeHttpRequests(auth -> {
             auth.requestMatchers(publicUrl).permitAll();
             auth.anyRequest().authenticated();
         });
 
-        http.formLogin(form->form.loginPage("/login").permitAll()
-                .successHandler())
+        http.formLogin(form -> form.loginPage("/login").
+                permitAll().successHandler(customAuthenticationSuccessHandler));
 
         return http.build();
     }
