@@ -1,13 +1,101 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta charset="UTF-8"/>
     <title>Dashboard</title>
+    <meta charset="utf-8"/>
+    <meta http-equiv="x-ua-compatible" content="ie=edge"/>
+    <meta name="description" content=""/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <link rel="stylesheet" type="text/css" media="all" th:href="@{/css/styles.css}"/>
+    <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css} "/>
+    <link th:rel="stylesheet" th:href="@{/webjars/font-awesome/css/all.css}"/>
 </head>
+
 <body>
-<h1>Dashboard</h1>
+<header class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <label class="mt-2 ms-5 font-weight-bold h5">
+        <a th:href="@{/dashboard/}" class="text-white text-decoration-none">RestaurantSystem</a>
+        <span class="logo_com font-weight-bold h5" style="color: white">.com</span>
+    </label>
+    <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarToggler"
+            aria-controls="navbarToggler"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+    >
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarToggler">
+        <ul class="navbar-nav m-auto mt-2 mt-lg-0">
+            <li class="nav-item active" sec:authorize="hasAuthority('user')">
+                <a class="nav-link" th:href="@{/menu}"><i class="fas fa-utensils"></i> Menu</a>
+            </li>
+            <li class="nav-item" sec:authorize="hasAuthority('user')">
+                <a class="nav-link" th:href="@{/orders}"><i class="fas fa-receipt"></i> My Orders</a>
+            </li>
+            <li class="nav-item" sec:authorize="hasAuthority('user')">
+                <a class="nav-link" th:href="@{/profile}"><i class="fa-solid fa-user"></i> Profile</a>
+            </li>
+            <li class="nav-item active" sec:authorize="hasAuthority('admin')">
+                <a class="nav-link" th:href="@{/admin_menu}"><i class="fas fa-cogs"></i> Manage Menu</a>
+            </li>
+            <li class="nav-item" sec:authorize="hasAuthority('admin')">
+                <a class="nav-link" th:href="@{/admin_orders}"><i class="fas fa-list"></i> All Orders</a>
+            </li>
+            <li class="nav-item" sec:authorize="hasAuthority('admin')">
+                <a class="nav-link" th:href="@{/admin_users}"><i class="fas fa-users"></i> Users</a>
+            </li>
+        </ul>
+
+        <img
+                class="rounded-circle me-3"
+                height="50"
+                width="50"
+                th:if="${user?.photosImagePath!=null}"
+                th:src="@{${user?.photosImagePath}}"
+        />
+
+        <label th:if="${user?.firstName != null && user?.lastName != null}"
+               th:text="${user.firstName+' '+user.lastName}"
+               class="nav-item nav-link px-2 me-3">
+        </label>
+
+        <label th:unless="${user?.firstName != null && user?.lastName != null}" th:text="${username}"
+               class="nav-item nav-link px-2 me-3"></label>
+
+        <button class="btn btn-light me-5" onclick="window.location.href='/logout'">Logout</button>
+    </div>
+</header>
+
+<section class="section">
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="box" sec:authorize="hasAuthority('admin')">
+                    <h1 class="primary-title">Admin Dashboard</h1>
+                    <p>Welcome, <span th:text="${user?.firstName}"></span>!</p>
+                    <p>Use the navigation above to manage menu, orders, and users.</p>
+                </div>
+                <div class="box" sec:authorize="hasAuthority('user')">
+                    <h1 class="primary-title">User Dashboard</h1>
+                    <p>Welcome, <span th:text="${user?.firstName}"></span>!</p>
+                    <p>Use the navigation above to view menu, your orders, and profile.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

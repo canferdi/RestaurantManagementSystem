@@ -18,12 +18,13 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String username = userDetails.getUsername();
         System.out.println("The username " + username + " is logged in.");
-        boolean hasUserRole = authentication.getAuthorities().stream().anyMatch(r -> r.
-                getAuthority().equals("User"));
-        boolean hasAdminRole = authentication.getAuthorities().stream().anyMatch(r -> r.
-                getAuthority().equals("Admin"));
-        if(hasAdminRole||hasUserRole){
-            response.sendRedirect("/dashboard");
+        boolean hasUserRole = authentication.getAuthorities().stream().
+                anyMatch(r -> r.getAuthority().equals("user"));
+        boolean hasAdminRole = authentication.getAuthorities().stream().
+                anyMatch(r -> r.getAuthority().equals("admin"));
+
+        if (hasAdminRole || hasUserRole) {
+            response.sendRedirect("/dashboard/");
         }
     }
 

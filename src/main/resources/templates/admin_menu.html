@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Menu - Admin Panel</title>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link rel="stylesheet" th:href="@{/css/font-awesome.min.css}"/>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .admin-navbar {
+            background: #2c3e50;
+        }
+        .admin-navbar .navbar-brand {
+            font-weight: bold;
+            color: #e74c3c !important;
+        }
+        .admin-navbar .nav-link {
+            color: #fff !important;
+        }
+        .admin-navbar .nav-link.active {
+            color: #e74c3c !important;
+        }
+        .admin-header {
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .admin-header h1 {
+            color: #2c3e50;
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+        .admin-header .btn {
+            margin-top: 1rem;
+        }
+        .menu-item-card {
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        .menu-item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .menu-item-image {
+            height: 200px;
+            object-fit: cover;
+        }
+        .card-actions {
+            margin-top: 1rem;
+        }
+        .btn-edit {
+            background-color: #2980b9;
+            color: white;
+        }
+        .btn-edit:hover {
+            background-color: #1c5a85;
+        }
+        .btn-delete {
+            background-color: #c0392b;
+            color: white;
+        }
+        .btn-delete:hover {
+            background-color: #922b1a;
+        }
+        .btn-add {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .btn-add:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg admin-navbar">
+    <div class="container">
+        <a class="navbar-brand" href="#">Admin Panel</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/admin_page}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="#">Manage Menu</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/logout}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="admin-header">
+        <h1>Manage Menu</h1>
+        <button class="btn btn-add" data-bs-toggle="modal" data-bs-target="#addMenuItemModal">
+            <i class="fa fa-plus"></i> Add New Item
+        </button>
+    </div>
+    <div class="row" id="menu-items">
+        <div th:each="item : ${menuItems}" class="col-md-6 col-lg-4 mb-4">
+            <div class="card menu-item-card">
+                <img th:src="${item.imageUrl}" th:alt="${item.name}" class="card-img-top menu-item-image">
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${item.name}">Item Name</h5>
+                    <p class="card-text" th:text="${item.description}">Item Description</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="h5 mb-0" th:text="${#numbers.formatDecimal(item.price, 1, 0)} + '₺'">₺0</span>
+                        <span class="badge bg-secondary" th:text="${item.category}">Category</span>
+                    </div>
+                    <div class="card-actions d-flex justify-content-between">
+                        <button class="btn btn-sm btn-edit mt-2"><i class="fa fa-edit"></i> Edit</button>
+                        <button class="btn btn-sm btn-delete mt-2"><i class="fa fa-trash"></i> Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(menuItems)}" class="text-center text-muted mt-5">
+            <p>No menu items found.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Add Menu Item Modal -->
+<div class="modal fade" id="addMenuItemModal" tabindex="-1" aria-labelledby="addMenuItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMenuItemModalLabel">Add New Menu Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="itemName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="itemName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="itemDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="itemDescription" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="itemPrice" class="form-label">Price</label>
+                        <input type="number" class="form-control" id="itemPrice" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="itemCategory" class="form-label">Category</label>
+                        <input type="text" class="form-control" id="itemCategory" required>
+                    </div>
+                    <button type="submit" class="btn btn-add">Add Item</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/webjars/jquery/jquery.min.js}"></script>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html> 
