@@ -25,7 +25,10 @@ public class WebSecurityConfig {
         this.customAuthenticationSuccessHandler = customAuthenticationSuccessHandler;
     }
 
-    private final String[] publicUrl = {"/", "/global-search/**", "/register", "/register/**", "/webjars/**", "/resources/**", "/assets/**", "/css/**", "/summernote/**", "/js/**", "/*.css", "/*.js", "/*.js.map", "/fonts**", "/favicon.ico", "/resources/**", "/error", "/images/**"};
+    private final String[] publicUrl = {"/", "/global-search/**", "/register", "/register/**",
+            "/webjars/**", "/resources/**", "/assets/**", "/css/**", "/summernote/**", "/js/**",
+            "/*.css", "/*.js", "/*.js.map", "/fonts**", "/favicon.ico", "/resources/**", "/error",
+            "/images/**"};
 
     @Bean
     protected SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
