@@ -24,4 +24,6 @@ public class MenuItem {
     //@Enumerated(EnumType.STRING)
     private String category;
 
+    @Column(name = "is_available", nullable = false)
+    private boolean isAvailable = true; // Varsayılan değer true olarak ayarlandı
 }

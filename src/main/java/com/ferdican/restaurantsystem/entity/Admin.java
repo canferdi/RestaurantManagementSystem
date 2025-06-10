@@ -6,7 +6,7 @@ import lombok.*;
 @Entity
 @Table(name = "admin_profile")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @ToString
-public class AdminProfile {
+public class Admin {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,7 +21,7 @@ public class AdminProfile {
     private String lastName;
     private String phoneNumber;
 
-    public AdminProfile(Users users) {
+    public Admin(Users users) {
         this.userId = users;
     }
 }

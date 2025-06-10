@@ -36,20 +36,20 @@
 
     <div class="collapse navbar-collapse" id="navbarToggler">
         <ul class="navbar-nav m-auto mt-2 mt-lg-0">
-            <li class="nav-item active" sec:authorize="hasAuthority('user')">
+            <li class="nav-item active" sec:authorize="hasAuthority('customer')">
                 <a class="nav-link" th:href="@{/menu}"><i class="fas fa-utensils"></i> Menu</a>
             </li>
-            <li class="nav-item" sec:authorize="hasAuthority('user')">
+            <li class="nav-item" sec:authorize="hasAuthority('customer')">
                 <a class="nav-link" th:href="@{/orders}"><i class="fas fa-receipt"></i> My Orders</a>
             </li>
-            <li class="nav-item" sec:authorize="hasAuthority('user')">
+            <li class="nav-item" sec:authorize="hasAuthority('customer')">
                 <a class="nav-link" th:href="@{/profile}"><i class="fa-solid fa-user"></i> Profile</a>
             </li>
             <li class="nav-item active" sec:authorize="hasAuthority('admin')">
-                <a class="nav-link" th:href="@{/admin_menu}"><i class="fas fa-cogs"></i> Manage Menu</a>
+                <a class="nav-link" th:href="@{/dashboard/manage}"><i class="fas fa-cogs"></i> Manage Menu</a>
             </li>
             <li class="nav-item" sec:authorize="hasAuthority('admin')">
-                <a class="nav-link" th:href="@{/admin_orders}"><i class="fas fa-list"></i> All Orders</a>
+                <a class="nav-link" th:href="@{/admin/orders}"><i class="fas fa-list"></i> All Orders</a>
             </li>
             <li class="nav-item" sec:authorize="hasAuthority('admin')">
                 <a class="nav-link" th:href="@{/admin_users}"><i class="fas fa-users"></i> Users</a>
@@ -85,7 +85,7 @@
                     <p>Welcome, <span th:text="${user?.firstName}"></span>!</p>
                     <p>Use the navigation above to manage menu, orders, and users.</p>
                 </div>
-                <div class="box" sec:authorize="hasAuthority('user')">
+                <div class="box" sec:authorize="hasAuthority('customer')">
                     <h1 class="primary-title">User Dashboard</h1>
                     <p>Welcome, <span th:text="${user?.firstName}"></span>!</p>
                     <p>Use the navigation above to view menu, your orders, and profile.</p>

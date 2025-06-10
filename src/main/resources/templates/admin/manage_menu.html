@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Menu Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Menu Management</h2>
+            <a href="/dashboard/" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+        
+        <!-- Add New Menu Item Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Add New Menu Item</h4>
+            </div>
+            <div class="card-body">
+                <form th:action="@{/dashboard/add}" th:object="${newMenuItem}" method="post">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="name" class="form-label">Item Name</label>
+                            <input type="text" class="form-control" id="name" th:field="*{name}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="description" th:field="*{description}" required>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="price" class="form-label">Price</label>
+                            <input type="number" step="0.01" class="form-control" id="price" th:field="*{price}" required>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" th:field="*{category}" required>
+                                <option value="starters">Starters</option>
+                                <option value="main_courses">Main Courses</option>
+                                <option value="desserts">Desserts</option>
+                                <option value="beverages">Beverages</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="imageUrl" class="form-label">Image URL</label>
+                            <input type="text" class="form-control" id="imageUrl" th:field="*{imageUrl}">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Current Menu Items Table -->
+        <div class="card">
+            <div class="card-header">
+                <h4>Current Menu Items</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Item Name</th>
+                                <th>Description</th>
+                                <th>Price</th>
+                                <th>Category</th>
+                                <th>Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="item : ${menuItems}">
+                                <td th:text="${item.id}"></td>
+                                <td th:text="${item.name}"></td>
+                                <td th:text="${item.description}"></td>
+                                <td th:text="${item.price}"></td>
+                                <td th:text="${item.category}"></td>
+                                <td>
+                                    <img th:if="${item.imageUrl}" th:src="${item.imageUrl}" style="max-width: 50px; max-height: 50px;">
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" 
+                                            th:onclick="'editItem(' + ${item.id} + ')'">Edit</button>
+                                    <form th:action="@{/dashboard/delete/{id}(id=${item.id})}" 
+                                          method="post" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                onclick="return confirm('Are you sure you want to delete this item?')">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Menu Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm" method="post">
+                        <input type="hidden" id="editId" name="id">
+                        <div class="mb-3">
+                            <label for="editName" class="form-label">Item Name</label>
+                            <input type="text" class="form-control" id="editName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDescription" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="editDescription" name="description" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPrice" class="form-label">Price</label>
+                            <input type="number" step="0.01" class="form-control" id="editPrice" name="price" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCategory" class="form-label">Category</label>
+                            <select class="form-select" id="editCategory" name="category" required>
+                                <option value="starters">Starters</option>
+                                <option value="main_courses">Main Courses</option>
+                                <option value="desserts">Desserts</option>
+                                <option value="beverages">Beverages</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editImageUrl" class="form-label">Image URL</label>
+                            <input type="text" class="form-control" id="editImageUrl" name="imageUrl">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEdit()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function editItem(id) {
+            // Get menu item details via AJAX
+            fetch('/dashboard/item/' + id)
+                .then(response => response.json())
+                .then(item => {
+                    document.getElementById('editId').value = item.id;
+                    document.getElementById('editName').value = item.name;
+                    document.getElementById('editDescription').value = item.description;
+                    document.getElementById('editPrice').value = item.price;
+                    document.getElementById('editCategory').value = item.category;
+                    document.getElementById('editImageUrl').value = item.imageUrl;
+                    
+                    document.getElementById('editForm').action = '/dashboard/update/' + id;
+                    new bootstrap.Modal(document.getElementById('editModal')).show();
+                });
+        }
+
+        function submitEdit() {
+            document.getElementById('editForm').submit();
+        }
+    </script>
+</body>
+</html> 

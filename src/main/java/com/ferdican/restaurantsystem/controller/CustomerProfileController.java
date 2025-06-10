@@ -1,9 +1,10 @@
 package com.ferdican.restaurantsystem.controller;
 
-import com.ferdican.restaurantsystem.entity.Admin;
+import com.ferdican.restaurantsystem.entity.Customer;
 import com.ferdican.restaurantsystem.entity.Users;
 import com.ferdican.restaurantsystem.repository.UsersRepository;
-import com.ferdican.restaurantsystem.services.AdminService;
+import com.ferdican.restaurantsystem.services.CustomerService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,40 +17,34 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.util.Optional;
 
 @Controller
-@RequestMapping("admin_page")
-public class AdminProfileController {
+@RequestMapping("customer_page")
+public class CustomerProfileController {
 
     private final UsersRepository usersRepository;
-    private final AdminService adminService;
+    private final CustomerService customerService;
 
-    public AdminProfileController(UsersRepository usersRepository, AdminService adminService) {
+    @Autowired
+    public CustomerProfileController(UsersRepository usersRepository, CustomerService customerService) {
         this.usersRepository = usersRepository;
-        this.adminService = adminService;
+        this.customerService = customerService;
     }
 
     @GetMapping("/")
-    public String AdminProfile(Model model) {
+    public String CustomerProfile(Model model) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
             String currentUsername = authentication.getName();
             Users users = usersRepository.findByEmail(currentUsername).orElseThrow(() -> new
                     UsernameNotFoundException("Could not found user"));
-            Optional<Admin> adminProfile = adminService.getOne(users.getUserId());
+            Optional<Customer> customerProfile = customerService.getOne(users.getUserId());
 
-            if (!adminProfile.isEmpty()) {
-                model.addAttribute("profile", adminProfile.get());
+            if (!customerProfile.isEmpty()) {
+                model.addAttribute("profile", customerProfile.get());
             }
         }
         return "redirect:/dashboard/";
     }
-
-    /*
-    @GetMapping("/admin_menu /admin_menu/")
-    public String adminMenu() {
-        return "admin_menu";
-    }
-    */
 
 
 

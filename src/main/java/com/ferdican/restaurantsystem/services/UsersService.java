@@ -1,9 +1,9 @@
 package com.ferdican.restaurantsystem.services;
 
-import com.ferdican.restaurantsystem.entity.AdminProfile;
+import com.ferdican.restaurantsystem.entity.Admin;
 import com.ferdican.restaurantsystem.entity.UserProfile;
 import com.ferdican.restaurantsystem.entity.Users;
-import com.ferdican.restaurantsystem.repository.AdminProfileRepository;
+import com.ferdican.restaurantsystem.repository.AdminRepository;
 import com.ferdican.restaurantsystem.repository.UserProfileRepository;
 import com.ferdican.restaurantsystem.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,17 +22,17 @@ import java.util.Optional;
 public class UsersService {
 
     private final UsersRepository usersRepository;
-    private final AdminProfileRepository adminProfileRepository;
+    private final AdminRepository adminRepository;
     private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public UsersService(UsersRepository usersRepository,
-                        AdminProfileRepository adminProfileRepository,
+                        AdminRepository adminRepository,
                         UserProfileRepository userProfileRepository,
                         PasswordEncoder passwordEncoder) {
         this.usersRepository = usersRepository;
-        this.adminProfileRepository = adminProfileRepository;
+        this.adminRepository = adminRepository;
         this.userProfileRepository = userProfileRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -45,7 +45,7 @@ public class UsersService {
         Users savedUser = usersRepository.save(users);
 
         if (userTypeId == 1){
-            adminProfileRepository.save(new AdminProfile(savedUser));
+            adminRepository.save(new Admin(savedUser));
         } else if (userTypeId == 2) {
             userProfileRepository.save(new UserProfile(savedUser));
         }
@@ -67,7 +67,7 @@ public class UsersService {
                     UsernameNotFoundException("Could not find user"));
             Long userId = users.getUserId();
             if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("Recruiter"))) {
-                AdminProfile recruiterProfile = adminProfileRepository.findById(userId).orElse(new AdminProfile());
+                Admin recruiterProfile = adminRepository.findById(userId).orElse(new Admin());
                 return recruiterProfile;
             }
             // ToDo: Uncomment and implement the logic for UserProfile
