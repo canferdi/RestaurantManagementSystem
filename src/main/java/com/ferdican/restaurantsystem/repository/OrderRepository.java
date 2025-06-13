@@ -2,6 +2,7 @@ package com.ferdican.restaurantsystem.repository;
 
 import com.ferdican.restaurantsystem.entity.Order;
 import com.ferdican.restaurantsystem.entity.OrderStatus;
+import com.ferdican.restaurantsystem.entity.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,4 +27,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     
     @Query("SELECT o FROM Order o ORDER BY o.orderDate DESC")
     List<Order> findAllOrdersOrderByDate();
+    
+    // Find orders by user
+    List<Order> findByUserOrderByOrderDateDesc(Users user);
+    
+    // Find orders by user and status
+    List<Order> findByUserAndStatusOrderByOrderDateDesc(Users user, OrderStatus status);
 }

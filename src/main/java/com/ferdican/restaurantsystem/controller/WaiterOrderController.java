@@ -4,6 +4,8 @@ import com.ferdican.restaurantsystem.entity.Order;
 import com.ferdican.restaurantsystem.entity.MenuItem;
 import com.ferdican.restaurantsystem.entity.OrderItem;
 import com.ferdican.restaurantsystem.entity.RestorantTable;
+import com.ferdican.restaurantsystem.entity.Users;
+import com.ferdican.restaurantsystem.repository.UsersRepository;
 import com.ferdican.restaurantsystem.services.OrderService;
 import com.ferdican.restaurantsystem.services.TableService;
 import com.ferdican.restaurantsystem.services.MenuActivityService;
@@ -13,6 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -29,14 +34,17 @@ public class WaiterOrderController {
     private final TableService tableService;
     private final MenuActivityService menuActivityService;
     private final InventoryService inventoryService;
+    private final UsersRepository usersRepository;
 
     @Autowired
     public WaiterOrderController(OrderService orderService, TableService tableService, 
-                               MenuActivityService menuActivityService, InventoryService inventoryService) {
+                               MenuActivityService menuActivityService, InventoryService inventoryService,
+                               UsersRepository usersRepository) {
         this.orderService = orderService;
         this.tableService = tableService;
         this.menuActivityService = menuActivityService;
         this.inventoryService = inventoryService;
+        this.usersRepository = usersRepository;
     }
 
     @GetMapping("/dashboard")
@@ -112,9 +120,15 @@ public class WaiterOrderController {
                 return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Table not found"));
             }
 
+            // Get current user (waiter)
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Users waiter = usersRepository.findByEmail(auth.getName())
+                    .orElseThrow(() -> new UsernameNotFoundException("Waiter not found"));
+
             // Create order
             Order order = new Order();
             order.setTable(table);
+            order.setUser(waiter); // Set the waiter as the user
             order.setTotalAmount(totalAmount);
             order.setOrderDate(new Date());
             order.setNotes(notes);

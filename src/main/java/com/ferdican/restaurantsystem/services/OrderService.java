@@ -2,6 +2,7 @@ package com.ferdican.restaurantsystem.services;
 
 import com.ferdican.restaurantsystem.entity.Order;
 import com.ferdican.restaurantsystem.entity.OrderStatus;
+import com.ferdican.restaurantsystem.entity.Users;
 import com.ferdican.restaurantsystem.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -165,6 +166,24 @@ public class OrderService {
         } catch (Exception e) {
             System.err.println("Error cancelling order: " + e.getMessage());
             return false;
+        }
+    }
+
+    public List<Order> getOrdersByUser(Users user) {
+        try {
+            return orderRepository.findByUserOrderByOrderDateDesc(user);
+        } catch (Exception e) {
+            System.err.println("Error fetching orders for user: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    public List<Order> getOrdersByUserAndStatus(Users user, OrderStatus status) {
+        try {
+            return orderRepository.findByUserAndStatusOrderByOrderDateDesc(user, status);
+        } catch (Exception e) {
+            System.err.println("Error fetching orders for user with status: " + e.getMessage());
+            return new java.util.ArrayList<>();
         }
     }
 } 

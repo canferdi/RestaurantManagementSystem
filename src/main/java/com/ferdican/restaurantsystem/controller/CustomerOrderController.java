@@ -83,9 +83,8 @@ public class CustomerOrderController {
         Users user = usersRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        List<Order> orders = orderService.getOrders(null, null, null).stream()
-                .filter(order -> order.getUser().getUserId().equals(user.getUserId()))
-                .toList();
+        // Use the new service method to get orders by user
+        List<Order> orders = orderService.getOrdersByUser(user);
 
         model.addAttribute("orders", orders);
         return "customer/my_orders";
@@ -106,7 +105,7 @@ public class CustomerOrderController {
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
             return orderService.getOrderById(id)
-                    .filter(order -> order.getUser().getUserId().equals(user.getUserId()))
+                    .filter(order -> order.getUser() != null && order.getUser().getUserId().equals(user.getUserId()))
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
