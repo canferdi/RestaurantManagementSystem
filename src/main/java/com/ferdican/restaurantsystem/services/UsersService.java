@@ -3,9 +3,13 @@ package com.ferdican.restaurantsystem.services;
 import com.ferdican.restaurantsystem.entity.Admin;
 import com.ferdican.restaurantsystem.entity.UserProfile;
 import com.ferdican.restaurantsystem.entity.Users;
+import com.ferdican.restaurantsystem.entity.Waiter;
+import com.ferdican.restaurantsystem.entity.KitchenStaff;
 import com.ferdican.restaurantsystem.repository.AdminRepository;
 import com.ferdican.restaurantsystem.repository.UserProfileRepository;
 import com.ferdican.restaurantsystem.repository.UsersRepository;
+import com.ferdican.restaurantsystem.repository.WaiterRepository;
+import com.ferdican.restaurantsystem.repository.KitchenStaffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,16 +29,22 @@ public class UsersService {
     private final AdminRepository adminRepository;
     private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WaiterRepository waiterRepository;
+    private final KitchenStaffRepository kitchenStaffRepository;
 
     @Autowired
     public UsersService(UsersRepository usersRepository,
                         AdminRepository adminRepository,
                         UserProfileRepository userProfileRepository,
-                        PasswordEncoder passwordEncoder) {
+                        PasswordEncoder passwordEncoder,
+                        WaiterRepository waiterRepository,
+                        KitchenStaffRepository kitchenStaffRepository) {
         this.usersRepository = usersRepository;
         this.adminRepository = adminRepository;
         this.userProfileRepository = userProfileRepository;
         this.passwordEncoder = passwordEncoder;
+        this.waiterRepository = waiterRepository;
+        this.kitchenStaffRepository = kitchenStaffRepository;
     }
 
     public Users addNew(Users users) {
@@ -48,6 +58,10 @@ public class UsersService {
             adminRepository.save(new Admin(savedUser));
         } else if (userTypeId == 2) {
             userProfileRepository.save(new UserProfile(savedUser));
+        } else if (userTypeId == 3) {
+            waiterRepository.save(new Waiter(savedUser));
+        } else if (userTypeId == 4) {
+            kitchenStaffRepository.save(new KitchenStaff(savedUser));
         }
 
         return savedUser;

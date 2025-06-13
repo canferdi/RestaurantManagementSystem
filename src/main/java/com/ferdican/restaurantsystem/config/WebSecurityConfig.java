@@ -36,6 +36,8 @@ public class WebSecurityConfig {
 
         http.authorizeHttpRequests(auth -> {
             auth.requestMatchers(publicUrl).permitAll();
+            auth.requestMatchers("/admin/**").hasAuthority("admin");
+            auth.requestMatchers("/dashboard/manage").hasAuthority("admin");
             auth.anyRequest().authenticated();
         });
 

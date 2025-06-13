@@ -25,4 +25,8 @@ public class RestorantTable {
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastOrderTime;
+
+    // Layout için ek alanlar
+    private int posX; // Masa yerleşim X
+    private int posY; // Masa yerleşim Y
 } 

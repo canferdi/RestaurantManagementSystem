@@ -29,27 +29,55 @@ public class OrderService {
     }
 
     public List<Order> getOrders(OrderStatus status, Date dateFrom, Date dateTo) {
-        return orderRepository.findOrdersByFilters(status, dateFrom, dateTo);
+        try {
+            return orderRepository.findOrdersByFilters(status, dateFrom, dateTo);
+        } catch (Exception e) {
+            // Log the error and return empty list
+            System.err.println("Error fetching orders: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    public List<Order> getAllOrders() {
+        try {
+            return orderRepository.findAllOrdersOrderByDate();
+        } catch (Exception e) {
+            System.err.println("Error fetching all orders: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
     }
 
     public List<Order> getActiveOrders() {
-        return orderRepository.findByStatus(OrderStatus.PENDING);
+        try {
+            return orderRepository.findByStatus(OrderStatus.PENDING);
+        } catch (Exception e) {
+            System.err.println("Error fetching active orders: " + e.getMessage());
+            return new java.util.ArrayList<>();
+        }
     }
 
-
-
     public Optional<Order> getOrderById(Long id) {
-        return orderRepository.findById(id);
+        try {
+            return orderRepository.findById(id);
+        } catch (Exception e) {
+            System.err.println("Error fetching order by id: " + e.getMessage());
+            return Optional.empty();
+        }
     }
 
     @Transactional
     public boolean updateOrderStatus(Long id, OrderStatus newStatus) {
-        return orderRepository.findById(id)
-                .map(order -> {
-                    order.setStatus(newStatus);
-                    orderRepository.save(order);
-                    return true;
-                })
-                .orElse(false);
+        try {
+            return orderRepository.findById(id)
+                    .map(order -> {
+                        order.setStatus(newStatus);
+                        orderRepository.save(order);
+                        return true;
+                    })
+                    .orElse(false);
+        } catch (Exception e) {
+            System.err.println("Error updating order status: " + e.getMessage());
+            return false;
+        }
     }
 } 

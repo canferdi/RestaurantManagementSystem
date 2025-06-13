@@ -23,4 +23,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("dateTo") Date dateTo);
 
     List<Order> findByStatus(OrderStatus orderStatus);
+    
+    @Query("SELECT o FROM Order o ORDER BY o.orderDate DESC")
+    List<Order> findAllOrdersOrderByDate();
 }

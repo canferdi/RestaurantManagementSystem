@@ -15,6 +15,13 @@
             </a>
         </div>
 
+        <!-- Error Message -->
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
         <!-- Order Filtering -->
         <div class="card mb-4">
             <div class="card-body">
@@ -24,7 +31,7 @@
                         <select class="form-select" id="status" name="status">
                             <option value="">All</option>
                             <option value="PENDING">Pending</option>
-                            <option value="CONFIRMED">Confirmed</option>
+                            <option value="COMPLETED">Completed</option>
                             <option value="PREPARING">Preparing</option>
                             <option value="READY_FOR_DELIVERY">Ready for Delivery</option>
                             <option value="DELIVERED">Delivered</option>
@@ -46,7 +53,7 @@
             </div>
         </div>
 
-        <!-- Orders RestorantTable -->
+        <!-- Orders Table -->
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
@@ -63,23 +70,22 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <tr th:if="${#lists.isEmpty(orders)}">
+                                <td colspan="7" class="text-center text-muted">
+                                    <i class="bi bi-inbox"></i> No orders found
+                                </td>
+                            </tr>
                             <tr th:each="order : ${orders}">
                                 <td th:text="${order.id}"></td>
-                                <td th:text="${order.user.email}"></td>
-                                <td th:text="${#dates.format(order.orderDate, 'dd-MM-yyyy HH:mm')}"></td>
-                                <td th:text="${#numbers.formatCurrency(order.totalAmount)}"></td>
+                                <td th:text="${order.user != null ? order.user.email : 'N/A'}"></td>
+                                <td th:text="${order.orderDate != null ? #dates.format(order.orderDate, 'dd-MM-yyyy HH:mm') : 'N/A'}"></td>
+                                <td th:text="${order.totalAmount != null ? #numbers.formatCurrency(order.totalAmount) : 'N/A'}"></td>
                                 <td>
-                                    <span th:class="${'badge ' + 
-                                        (order.status == T(com.ferdican.restaurantsystem.entity.OrderStatus).PENDING ? 'bg-warning' : 
-                                         order.status == T(com.ferdican.restaurantsystem.entity.OrderStatus).CONFIRMED ? 'bg-info' :
-                                         order.status == T(com.ferdican.restaurantsystem.entity.OrderStatus).PREPARING ? 'bg-primary' :
-                                         order.status == T(com.ferdican.restaurantsystem.entity.OrderStatus).READY_FOR_DELIVERY ? 'bg-success' :
-                                         order.status == T(com.ferdican.restaurantsystem.entity.OrderStatus).DELIVERED ? 'bg-secondary' :
-                                         'bg-danger')}"
-                                        th:text="${order.status}">
+                                    <span th:class="${'badge ' + (order.status != null && order.status.name() == 'PENDING' ? 'bg-warning' : order.status != null && order.status.name() == 'COMPLETED' ? 'bg-info' : order.status != null && order.status.name() == 'PREPARING' ? 'bg-primary' : order.status != null && order.status.name() == 'READY_FOR_DELIVERY' ? 'bg-success' : 'bg-danger')}"
+                                        th:text="${order.status != null ? order.status : 'N/A'}">
                                     </span>
                                 </td>
-                                <td th:text="${order.deliveryAddress}"></td>
+                                <td th:text="${order.deliveryAddress != null ? order.deliveryAddress : 'N/A'}"></td>
                                 <td>
                                     <button class="btn btn-sm btn-info" 
                                             th:onclick="'viewOrderDetails(' + ${order.id} + ')'"
@@ -87,32 +93,32 @@
                                         <i class="bi bi-eye"></i>
                                     </button>
                                     <button class="btn btn-sm btn-success" 
-                                            th:if="${order.status == T(com.ferdican.restaurantsystem.entity.OrderStatus).PENDING}"
-                                            th:onclick="'updateOrderStatus(' + ${order.id} + ', \'CONFIRMED\')'"
+                                            th:if="${order.status != null && order.status.name() == 'PENDING'}"
+                                            th:onclick="'updateOrderStatus(' + ${order.id} + ', \'COMPLETED\')'"
                                             title="Confirm">
                                         <i class="bi bi-check-lg"></i>
                                     </button>
                                     <button class="btn btn-sm btn-primary" 
-                                            th:if="${order.status == T(com.ferdican.restaurantsystem.entity.OrderStatus).CONFIRMED}"
+                                            th:if="${order.status != null && order.status.name() == 'COMPLETED'}"
                                             th:onclick="'updateOrderStatus(' + ${order.id} + ', \'PREPARING\')'"
                                             title="Start Preparing">
                                         <i class="bi bi-cup-hot"></i>
                                     </button>
                                     <button class="btn btn-sm btn-warning" 
-                                            th:if="${order.status == T(com.ferdican.restaurantsystem.entity.OrderStatus).PREPARING}"
+                                            th:if="${order.status != null && order.status.name() == 'PREPARING'}"
                                             th:onclick="'updateOrderStatus(' + ${order.id} + ', \'READY_FOR_DELIVERY\')'"
                                             title="Ready for Delivery">
                                         <i class="bi bi-truck"></i>
                                     </button>
                                     <button class="btn btn-sm btn-secondary" 
-                                            th:if="${order.status == T(com.ferdican.restaurantsystem.entity.OrderStatus).READY_FOR_DELIVERY}"
+                                            th:if="${order.status != null && order.status.name() == 'READY_FOR_DELIVERY'}"
                                             th:onclick="'updateOrderStatus(' + ${order.id} + ', \'DELIVERED\')'"
                                             title="Mark as Delivered">
                                         <i class="bi bi-check-circle"></i>
                                     </button>
                                     <button class="btn btn-sm btn-danger" 
-                                            th:if="${order.status != T(com.ferdican.restaurantsystem.entity.OrderStatus).DELIVERED && 
-                                                    order.status != T(com.ferdican.restaurantsystem.entity.OrderStatus).CANCELLED}"
+                                            th:if="${order.status != null && order.status.name() != 'DELIVERED' && 
+                                                    order.status.name() != 'CANCELLED'}"
                                             th:onclick="'updateOrderStatus(' + ${order.id} + ', \'CANCELLED\')'"
                                             title="Cancel Order">
                                         <i class="bi bi-x-circle"></i>
@@ -147,13 +153,18 @@
     <script>
         function viewOrderDetails(orderId) {
             fetch('/admin/orders/' + orderId + '/details')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Order details could not be loaded');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     let content = `
                         <div class="mb-3">
                             <h6>Customer Information</h6>
-                            <p>Email: ${data.user.email}</p>
-                            <p>Address: ${data.deliveryAddress}</p>
+                            <p>Email: ${data.user ? data.user.email : 'N/A'}</p>
+                            <p>Address: ${data.deliveryAddress || 'N/A'}</p>
                         </div>
                         <div class="mb-3">
                             <h6>Order Items</h6>
@@ -167,19 +178,22 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${data.orderItems.map(item => `
-                                        <tr>
-                                            <td>${item.menuItem.name}</td>
-                                            <td>${item.quantity}</td>
-                                            <td>${item.price.toFixed(2)} ₺</td>
-                                            <td>${(item.quantity * item.price).toFixed(2)} ₺</td>
-                                        </tr>
-                                    `).join('')}
+                                    ${data.orderItems && data.orderItems.length > 0 ? 
+                                        data.orderItems.map(item => `
+                                            <tr>
+                                                <td>${item.menuItem ? item.menuItem.name : 'N/A'}</td>
+                                                <td>${item.quantity || 0}</td>
+                                                <td>${item.price ? item.price.toFixed(2) : '0.00'} ₺</td>
+                                                <td>${item.quantity && item.price ? (item.quantity * item.price).toFixed(2) : '0.00'} ₺</td>
+                                            </tr>
+                                        `).join('') : 
+                                        '<tr><td colspan="4" class="text-center">No items found</td></tr>'
+                                    }
                                 </tbody>
                                 <tfoot>
                                     <tr>
                                         <td colspan="3" class="text-end"><strong>Total Amount:</strong></td>
-                                        <td><strong>${data.totalAmount.toFixed(2)} ₺</strong></td>
+                                        <td><strong>${data.totalAmount ? data.totalAmount.toFixed(2) : '0.00'} ₺</strong></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -193,6 +207,9 @@
                     `;
                     document.getElementById('orderDetailsContent').innerHTML = content;
                     new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
+                })
+                .catch(error => {
+                    alert('Error loading order details: ' + error.message);
                 });
         }
 
@@ -211,6 +228,9 @@
                     } else {
                         alert('An error occurred while updating the order status.');
                     }
+                })
+                .catch(error => {
+                    alert('Error updating order status: ' + error.message);
                 });
             }
         }

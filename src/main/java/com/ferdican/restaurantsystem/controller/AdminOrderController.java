@@ -32,17 +32,32 @@ public class AdminOrderController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date dateTo,
             Model model) {
         
-        List<Order> orders = orderService.getOrders(status, dateFrom, dateTo);
-        model.addAttribute("orders", orders);
-        return "admin/all_orders";
+        try {
+            List<Order> orders;
+            if (status != null || dateFrom != null || dateTo != null) {
+                orders = orderService.getOrders(status, dateFrom, dateTo);
+            } else {
+                orders = orderService.getAllOrders();
+            }
+            model.addAttribute("orders", orders);
+            return "admin/all_orders";
+        } catch (Exception e) {
+            model.addAttribute("error", "Siparişler yüklenirken bir hata oluştu: " + e.getMessage());
+            model.addAttribute("orders", new java.util.ArrayList<>());
+            return "admin/all_orders";
+        }
     }
 
     @GetMapping("/{id}/details")
     @ResponseBody
     public ResponseEntity<Order> getOrderDetails(@PathVariable Long id) {
-        return orderService.getOrderById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            return orderService.getOrderById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping("/{id}/status")
@@ -59,6 +74,8 @@ public class AdminOrderController {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
     }
 } 
