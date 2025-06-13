@@ -5,6 +5,7 @@ import com.ferdican.restaurantsystem.repository.TableRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TableService {
@@ -16,6 +17,10 @@ public class TableService {
 
     public List<RestorantTable> getAllTables() {
         return tableRepository.findAll();
+    }
+
+    public RestorantTable getTableById(Long id) {
+        return tableRepository.findById(id).orElse(null);
     }
 
     public List<RestorantTable> getTablesByWaiter(Long waiterId) {

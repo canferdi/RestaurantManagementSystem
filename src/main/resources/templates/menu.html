@@ -44,7 +44,7 @@
                         <a class="nav-link active" href="/menu"><i class="fas fa-utensils"></i> Menu</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/orders"><i class="fas fa-receipt"></i> My Orders</a>
+                        <a class="nav-link" href="/customer/orders"><i class="fas fa-receipt"></i> My Orders</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
@@ -80,6 +80,27 @@
 
     <div class="container my-5">
         <h1 class="text-center mb-5">Our Menu</h1>
+        <div th:if="${popularItems != null && !popularItems.isEmpty()}">
+            <h3 class="mb-3">Popular Products</h3>
+            <div class="row mb-4">
+                <div class="col-md-3" th:each="item : ${popularItems}">
+                    <div class="card h-100 border-primary">
+                        <img th:src="${item.imageUrl}" th:alt="${item.name}" class="card-img-top" style="height: 180px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="${item.name}"></h5>
+                            <p class="card-text" th:text="${item.description}"></p>
+                            <span class="badge bg-success mb-2" th:text="${#numbers.formatDecimal(item.price, 1, 2)} + ' ₺'"></span>
+                            <button class="btn btn-primary w-100 mt-2 add-to-cart"
+                                    th:data-id="${item.id}"
+                                    th:data-name="${item.name}"
+                                    th:data-price="${item.price}">
+                                <i class="fas fa-plus"></i> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div class="category-filter text-center">
             <button class="btn btn-outline-primary m-1 active" data-category="all">All</button>
@@ -160,6 +181,22 @@
                     </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary" id="modal-checkout-btn">Complete Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-4">No payment information required. Click below to complete your order.</p>
+                    <button id="payNowBtn" class="btn btn-success btn-lg w-100">Pay Now</button>
                 </div>
             </div>
         </div>
@@ -295,26 +332,66 @@
             });
         });
 
-        document.getElementById('checkout-btn').addEventListener('click', function() {
-            if (cart.length === 0) {
-                alert('Your cart is empty!');
-                return;
+        document.addEventListener('DOMContentLoaded', function() {
+            const completeOrderBtn = document.getElementById('checkout-btn');
+            if (completeOrderBtn) {
+                completeOrderBtn.addEventListener('click', function(e) {
+                    e.preventDefault(); // Form submit veya başka bir event tetiklenmesin
+                    const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+                    paymentModal.show();
+                });
             }
-            alert('Your order has been received! Thank you.');
-            cart = [];
-            updateCart();
+            const payNowBtn = document.getElementById('payNowBtn');
+            if (payNowBtn) {
+                payNowBtn.addEventListener('click', function() {
+                    if (cart.length === 0) {
+                        alert('Your cart is empty!');
+                        return;
+                    }
+                    createOrder();
+                    const paymentModal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+                    paymentModal.hide();
+                });
+            }
         });
 
-        document.getElementById('modal-checkout-btn').addEventListener('click', function() {
-            if (cart.length === 0) {
-                alert('Your cart is empty!');
-                return;
-            }
-            alert('Your order has been received! Thank you.');
-            cart = [];
-            updateCart();
-            bootstrap.Modal.getInstance(document.getElementById('cartModal')).hide();
-        });
+        function createOrder() {
+            // Prepare order data
+            const orderData = {
+                items: cart.map(item => ({
+                    menuItemId: parseInt(item.id),
+                    quantity: item.quantity,
+                    price: item.price
+                })),
+                totalAmount: cart.reduce((total, item) => total + (item.price * item.quantity), 0),
+                deliveryAddress: "Customer address", // This part can be taken with form later
+                notes: ""
+            };
+
+            // Send order creation request to API
+            fetch('/customer/orders/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('An error occurred while creating the order');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('Your order has been successfully created! Order number: ' + data.id);
+                cart = [];
+                updateCart();
+            })
+            .catch(error => {
+                console.error('Order creation error:', error);
+                alert('An error occurred while creating the order: ' + error.message);
+            });
+        }
 
         function clearCart() {
             if (cart.length === 0) {
@@ -325,7 +402,7 @@
             if (confirm('Are you sure you want to clear your cart?')) {
                 cart = [];
                 updateCart();
-                // Eğer modal açıksa kapat
+                // Close modal if open
                 const cartModal = bootstrap.Modal.getInstance(document.getElementById('cartModal'));
                 if (cartModal) {
                     cartModal.hide();

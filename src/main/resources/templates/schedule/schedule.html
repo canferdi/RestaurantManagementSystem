@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Schedule</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+</head>
+<body>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar-event"></i> Work Schedule</h2>
+        <a href="/dashboard/" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+    </div>
+    <div th:if="${param.success}" class="alert alert-success">Schedule updated successfully!</div>
+    <div th:if="${param.error}" class="alert alert-danger">You are not authorized to update the schedule.</div>
+    <form th:if="${isAdmin}" th:each="schedule, sIdx : ${schedules}" th:action="@{/schedule/update}" method="post">
+        <table class="table table-bordered">
+            <tbody>
+            <tr>
+                <td th:text="${schedule.user.email}"></td>
+                <td colspan="3">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                        <tr th:each="workDay, dIdx : ${schedule.workDays}">
+                            <td>
+                                <input type="text" th:name="workDays[__${dIdx.index}__].dayOfWeek" th:value="${workDay.dayOfWeek}" class="form-control" placeholder="Day (e.g. MONDAY)"/>
+                            </td>
+                            <td>
+                                <input type="text" th:name="workDays[__${dIdx.index}__].startTime" th:value="${workDay.startTime}" class="form-control" placeholder="Start Time (e.g. 09:00)"/>
+                            </td>
+                            <td>
+                                <input type="text" th:name="workDays[__${dIdx.index}__].endTime" th:value="${workDay.endTime}" class="form-control" placeholder="End Time (e.g. 17:00)"/>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm" th:onclick="|removeWorkDay(this, ${dIdx.index})|">Remove</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </td>
+                <td>
+                    <input type="hidden" name="id" th:value="${schedule.id}"/>
+                    <input type="hidden" name="user.userId" th:value="${schedule.user.userId}"/>
+                    <button type="button" class="btn btn-success btn-sm" th:onclick="|addWorkDay(this)|">Add Day</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </form>
+    <script>
+        function addWorkDay(btn) {
+            const row = btn.closest('tr');
+            const table = row.querySelector('table tbody');
+            const index = table.querySelectorAll('tr').length;
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="text" name="workDays[${index}].dayOfWeek" class="form-control" placeholder="Day (e.g. MONDAY)"/></td>
+                <td><input type="text" name="workDays[${index}].startTime" class="form-control" placeholder="Start Time (e.g. 09:00)"/></td>
+                <td><input type="text" name="workDays[${index}].endTime" class="form-control" placeholder="End Time (e.g. 17:00)"/></td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeWorkDay(this)">Remove</button></td>
+            `;
+            table.appendChild(newRow);
+        }
+        function removeWorkDay(btn) {
+            const row = btn.closest('tr');
+            row.remove();
+        }
+    </script>
+    <div th:if="${!isAdmin}">
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                <th>User</th>
+                <th>Day</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="schedule : ${schedules}">
+                <td th:text="${schedule.user.email}"></td>
+                <td th:each="workDay : ${schedule.workDays}">
+                    <span th:text="${workDay.dayOfWeek}"></span>
+                </td>
+                <td th:each="workDay : ${schedule.workDays}">
+                    <span th:text="${workDay.startTime}"></span>
+                </td>
+                <td th:each="workDay : ${schedule.workDays}">
+                    <span th:text="${workDay.endTime}"></span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html> 

@@ -22,5 +22,5 @@ public class OrderItem {
 
     private Integer quantity;
 
-    private Double price; // Sipariş anındaki fiyat
+    private Double price; // Price at the time of order
 } 

@@ -1,36 +1,71 @@
 <!DOCTYPE html>
-<html lang="tr" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
+    <title>Table Layout</title>
     <meta charset="UTF-8">
-    <title>Masa Yerleşimi</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .table-dot {
-            position: absolute;
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            background: #81d4fa;
-            color: #fff;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; font-weight: bold;
-            border: 3px solid #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        .table-card {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
         }
-        .layout-area { position: relative; width: 100%; height: 600px; background: #f8f9fa; border: 1px solid #ccc; }
+        
+        .table-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .table-card.available {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        
+        .table-card.occupied {
+            border-color: #ffc107;
+            background-color: #fff3cd;
+        }
+        
+        .table-card.reserved {
+            border-color: #17a2b8;
+            background-color: #d1ecf1;
+        }
+        
+        .table-card.order {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
     </style>
 </head>
 <body>
-<div class="container py-4">
-    <h2>Masa Yerleşimi</h2>
-    <div class="layout-area">
-        <div th:each="table : ${tables}"
-             th:style="'left:' + ${table.posX} + 'px;top:' + ${table.posY} + 'px;'"
-             class="table-dot"
-             th:title="'Masa ' + ${table.number} + ' - ' + (${table.status})">
-            <span th:text="${table.number}">1</span>
+    <div class="container mt-4">
+        <h2>Table Layout</h2>
+        
+        <div class="row g-3">
+            <div class="col-6 col-md-4 col-lg-3" th:each="table : ${tables}">
+                <div class="table-card"
+                     th:classappend="${table.status == 'AVAILABLE'} ? 'available' : (${table.status == 'OCCUPIED'} ? 'occupied' : (${table.status == 'RESERVED'} ? 'reserved' : 'order'))"
+                     th:title="'Table ' + ${table.number} + ' - ' + (${table.status})">
+                    <h4 class="mb-2">
+                        <i class="bi bi-table"></i> <span th:text="${table.number}">1</span>
+                    </h4>
+                    <span class="badge" 
+                          th:class="${table.status == 'AVAILABLE'} ? 'bg-success' : (${table.status == 'OCCUPIED'} ? 'bg-warning' : (${table.status == 'RESERVED'} ? 'bg-info' : 'bg-danger'))"
+                          th:text="${table.status}">Available</span>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 

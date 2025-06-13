@@ -38,6 +38,10 @@ public class WebSecurityConfig {
             auth.requestMatchers(publicUrl).permitAll();
             auth.requestMatchers("/admin/**").hasAuthority("admin");
             auth.requestMatchers("/dashboard/manage").hasAuthority("admin");
+            auth.requestMatchers("/kitchen/**").hasAuthority("kitchen staff");
+            auth.requestMatchers("/waiter/**").hasAuthority("waiter");
+            auth.requestMatchers("/orders/**").hasAnyAuthority("admin", "kitchen staff", "waiter");
+            auth.requestMatchers("/schedule/**").hasAnyAuthority("admin", "waiter", "kitchen staff");
             auth.anyRequest().authenticated();
         });
 

@@ -42,39 +42,38 @@ public class CustomerOrderController {
     @ResponseBody
     public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> orderData) {
         try {
-            System.out.println("Sipariş oluşturma isteği alındı: " + orderData);
+            System.out.println("Order creation request received: " + orderData);
 
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             Users user = usersRepository.findByEmail(auth.getName())
-                    .orElseThrow(() -> new UsernameNotFoundException("Kullanıcı bulunamadı"));
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
             Order order = new Order();
             order.setUser(user);
             order.setDeliveryAddress((String) orderData.get("deliveryAddress"));
             order.setNotes((String) orderData.get("notes"));
             order.setTotalAmount(Double.valueOf(orderData.get("totalAmount").toString()));
-            order.setOrderItems(new ArrayList<>()); // Listeyi başlat
 
-            // OrderItem'ları oluştur
+            // Create OrderItems
             List<Map<String, Object>> items = (List<Map<String, Object>>) orderData.get("items");
             for (Map<String, Object> item : items) {
                 OrderItem orderItem = new OrderItem();
                 Long menuItemId = Long.valueOf(item.get("menuItemId").toString());
                 MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                        .orElseThrow(() -> new RuntimeException("Menu item bulunamadı: " + menuItemId));
+                        .orElseThrow(() -> new RuntimeException("Menu item not found: " + menuItemId));
                 orderItem.setMenuItem(menuItem);
                 orderItem.setQuantity(Integer.valueOf(item.get("quantity").toString()));
                 orderItem.setPrice(Double.valueOf(item.get("price").toString()));
-                orderItem.setOrder(order);
-                order.getOrderItems().add(orderItem);
+                orderItem.setOrder(order); // Set Order to OrderItem
+                order.getOrderItems().add(orderItem); // Add OrderItem to Order
             }
 
             Order savedOrder = orderService.createOrder(order);
-            System.out.println("Sipariş başarıyla oluşturuldu: " + savedOrder.getId());
+            System.out.println("Order successfully created: " + savedOrder.getId());
             return ResponseEntity.ok(savedOrder);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Sipariş oluşturulurken bir hata oluştu: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error occurred while creating order: " + e.getMessage());
         }
     }
 
@@ -82,7 +81,7 @@ public class CustomerOrderController {
     public String getMyOrders(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Users user = usersRepository.findByEmail(auth.getName())
-                .orElseThrow(() -> new UsernameNotFoundException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         List<Order> orders = orderService.getOrders(null, null, null).stream()
                 .filter(order -> order.getUser().getUserId().equals(user.getUserId()))
@@ -90,5 +89,28 @@ public class CustomerOrderController {
 
         model.addAttribute("orders", orders);
         return "customer/my_orders";
+    }
+
+    @GetMapping
+    public String getOrders(Model model) {
+        // Redirect to my-orders for customers
+        return "redirect:/customer/orders/my-orders";
+    }
+
+    @GetMapping("/{id}/details")
+    @ResponseBody
+    public ResponseEntity<Order> getOrderDetails(@PathVariable Long id) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Users user = usersRepository.findByEmail(auth.getName())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            return orderService.getOrderById(id)
+                    .filter(order -> order.getUser().getUserId().equals(user.getUserId()))
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 } 

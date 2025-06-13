@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>All Orders</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        .order-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .order-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .status-card {
+            min-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-list-ul"></i> All Orders</h2>
+            <div>
+                <a href="/dashboard/" class="btn btn-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+                <!-- Role-specific navigation -->
+                <a sec:authorize="hasAuthority('kitchen staff')" href="/kitchen/dashboard" class="btn btn-primary">
+                    <i class="bi bi-fire"></i> Kitchen Dashboard
+                </a>
+                <a sec:authorize="hasAuthority('waiter')" href="/waiter/dashboard" class="btn btn-info">
+                    <i class="bi bi-table"></i> Waiter Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Order Status Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-warning status-card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-clock"></i> Pending Orders</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 class="text-warning" th:text="${#lists.size(pendingOrders)}">0</h2>
+                        <p class="text-muted">Orders waiting to be processed</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-primary status-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-cup-hot"></i> Preparing Orders</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 class="text-primary" th:text="${#lists.size(preparingOrders)}">0</h2>
+                        <p class="text-muted">Orders being prepared</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-success status-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-check-circle"></i> Ready Orders</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 class="text-success" th:text="${#lists.size(readyOrders)}">0</h2>
+                        <p class="text-muted">Orders ready for delivery</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-info status-card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-truck"></i> Delivered Orders</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 class="text-info" th:text="${#lists.size(deliveredOrders)}">0</h2>
+                        <p class="text-muted">Orders delivered</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Filtering -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Order Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="PREPARING">Preparing</option>
+                            <option value="READY_FOR_DELIVERY">Ready for Delivery</option>
+                            <option value="DELIVERED">Delivered</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dateFrom" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="dateFrom" name="dateFrom">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dateTo" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="dateTo" name="dateTo">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Orders by Status -->
+        <div class="row">
+            <!-- Pending Orders -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-clock"></i> Pending Orders</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(pendingOrders)}" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-2">No pending orders</p>
+                        </div>
+                        <div th:each="order : ${pendingOrders}" class="order-card mb-3 p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">Order #<span th:text="${order.id}"></span></h6>
+                                    <p class="mb-1 text-muted" th:text="${order.user != null ? order.user.email : 'N/A'}"></p>
+                                    <p class="mb-1" th:text="${order.orderDate != null ? #dates.format(order.orderDate, 'dd-MM-yyyy HH:mm') : 'N/A'}"></p>
+                                    <p class="mb-0"><strong th:text="${order.totalAmount != null ? #numbers.formatCurrency(order.totalAmount) : 'N/A'}"></strong></p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-info" 
+                                            th:onclick="'viewOrderDetails(' + ${order.id} + ')'"
+                                            title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <!-- Kitchen Staff can start preparing -->
+                                    <button class="btn btn-sm btn-success" 
+                                            sec:authorize="hasAuthority('kitchen staff')"
+                                            th:onclick="'updateOrderStatus(' + ${order.id} + ', \'PREPARING\')'"
+                                            title="Start Preparing">
+                                        <i class="bi bi-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preparing Orders -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-cup-hot"></i> Preparing Orders</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(preparingOrders)}" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-2">No preparing orders</p>
+                        </div>
+                        <div th:each="order : ${preparingOrders}" class="order-card mb-3 p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">Order #<span th:text="${order.id}"></span></h6>
+                                    <p class="mb-1 text-muted" th:text="${order.user != null ? order.user.email : 'N/A'}"></p>
+                                    <p class="mb-1" th:text="${order.orderDate != null ? #dates.format(order.orderDate, 'dd-MM-yyyy HH:mm') : 'N/A'}"></p>
+                                    <p class="mb-0"><strong th:text="${order.totalAmount != null ? #numbers.formatCurrency(order.totalAmount) : 'N/A'}"></strong></p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-info" 
+                                            th:onclick="'viewOrderDetails(' + ${order.id} + ')'"
+                                            title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <!-- Kitchen Staff can mark as ready -->
+                                    <button class="btn btn-sm btn-warning" 
+                                            sec:authorize="hasAuthority('kitchen staff')"
+                                            th:onclick="'updateOrderStatus(' + ${order.id} + ', \'READY_FOR_DELIVERY\')'"
+                                            title="Mark as Ready">
+                                        <i class="bi bi-check"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ready Orders -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-check-circle"></i> Ready Orders</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(readyOrders)}" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-2">No ready orders</p>
+                        </div>
+                        <div th:each="order : ${readyOrders}" class="order-card mb-3 p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">Order #<span th:text="${order.id}"></span></h6>
+                                    <p class="mb-1 text-muted" th:text="${order.user != null ? order.user.email : 'N/A'}"></p>
+                                    <p class="mb-1" th:text="${order.orderDate != null ? #dates.format(order.orderDate, 'dd-MM-yyyy HH:mm') : 'N/A'}"></p>
+                                    <p class="mb-0"><strong th:text="${order.totalAmount != null ? #numbers.formatCurrency(order.totalAmount) : 'N/A'}"></strong></p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-info" 
+                                            th:onclick="'viewOrderDetails(' + ${order.id} + ')'"
+                                            title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <!-- Waiter can mark as delivered -->
+                                    <button class="btn btn-sm btn-secondary" 
+                                            sec:authorize="hasAuthority('waiter')"
+                                            th:onclick="'updateOrderStatus(' + ${order.id} + ', \'DELIVERED\')'"
+                                            title="Mark as Delivered">
+                                        <i class="bi bi-truck"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivered Orders -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-truck"></i> Delivered Orders</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(deliveredOrders)}" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-2">No delivered orders</p>
+                        </div>
+                        <div th:each="order : ${deliveredOrders}" class="order-card mb-3 p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">Order #<span th:text="${order.id}"></span></h6>
+                                    <p class="mb-1 text-muted" th:text="${order.user != null ? order.user.email : 'N/A'}"></p>
+                                    <p class="mb-1" th:text="${order.orderDate != null ? #dates.format(order.orderDate, 'dd-MM-yyyy HH:mm') : 'N/A'}"></p>
+                                    <p class="mb-0"><strong th:text="${order.totalAmount != null ? #numbers.formatCurrency(order.totalAmount) : 'N/A'}"></strong></p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-info" 
+                                            th:onclick="'viewOrderDetails(' + ${order.id} + ')'"
+                                            title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal fade" id="orderDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Order Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="orderDetailsContent">
+                        <!-- Will be filled via AJAX -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewOrderDetails(orderId) {
+            // Determine the correct endpoint based on user role
+            let endpoint = '/orders/' + orderId + '/details';
+            
+            fetch(endpoint)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Order details could not be loaded');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let content = `
+                        <div class="mb-3">
+                            <h6>Customer Information</h6>
+                            <p>Email: ${data.user ? data.user.email : 'N/A'}</p>
+                            <p>Address: ${data.deliveryAddress || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <h6>Order Items</h6>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.orderItems && data.orderItems.length > 0 ? 
+                                        data.orderItems.map(item => `
+                                            <tr>
+                                                <td>${item.menuItem ? item.menuItem.name : 'N/A'}</td>
+                                                <td>${item.quantity || 0}</td>
+                                                <td>${item.price ? item.price.toFixed(2) : '0.00'} ₺</td>
+                                                <td>${item.quantity && item.price ? (item.quantity * item.price).toFixed(2) : '0.00'} ₺</td>
+                                            </tr>
+                                        `).join('') : 
+                                        '<tr><td colspan="4" class="text-center">No items found</td></tr>'
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Total Amount:</strong></td>
+                                        <td><strong>${data.totalAmount ? data.totalAmount.toFixed(2) : '0.00'} ₺</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        ${data.notes ? `
+                            <div class="mb-3">
+                                <h6>Notes</h6>
+                                <p>${data.notes}</p>
+                            </div>
+                        ` : ''}
+                    `;
+                    document.getElementById('orderDetailsContent').innerHTML = content;
+                    new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
+                })
+                .catch(error => {
+                    alert('Error loading order details: ' + error.message);
+                });
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            const statusText = newStatus === 'PREPARING' ? 'start preparing' :
+                              newStatus === 'READY_FOR_DELIVERY' ? 'mark as ready' :
+                              newStatus === 'DELIVERED' ? 'mark as delivered' : 'update';
+            
+            if (confirm('Are you sure you want to ' + statusText + ' this order?')) {
+                // Determine the correct endpoint based on user role
+                let endpoint = '/orders/' + orderId + '/status';
+                
+                fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('An error occurred while updating the order status.');
+                    }
+                })
+                .catch(error => {
+                    alert('Error updating order status: ' + error.message);
+                });
+            }
+        }
+    </script>
+</body>
+</html> 

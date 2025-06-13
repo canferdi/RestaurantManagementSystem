@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Waiter Dashboard - Table Management</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .table-card {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .table-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .table-card.available {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        
+        .table-card.occupied {
+            border-color: #ffc107;
+            background-color: #fff3cd;
+        }
+        
+        .table-card.reserved {
+            border-color: #17a2b8;
+            background-color: #d1ecf1;
+        }
+        
+        .table-card.order {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+
+        .table-card.selected {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+            transform: scale(1.05);
+        }
+
+        .order-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 15px;
+        }
+
+        .order-card.pending {
+            border-left: 4px solid #ffc107;
+        }
+
+        .order-card.ready {
+            border-left: 4px solid #28a745;
+        }
+
+        .table-layout {
+            background-color: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .table-row {
+            margin-bottom: 15px;
+        }
+
+        .table-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .menu-item-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item-card:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .menu-item-card.selected {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+
+        .cart-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .order-panel {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 0 10px;
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .step.active .step-number {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .step.completed .step-number {
+            background-color: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="bi bi-table"></i> Table Management Dashboard</h2>
+                <hr>
+            </div>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step active" id="step1-indicator">
+                <div class="step-number">1</div>
+                <span>Select Table</span>
+            </div>
+            <div class="step" id="step2-indicator">
+                <div class="step-number">2</div>
+                <span>Select Menu Items</span>
+            </div>
+            <div class="step" id="step3-indicator">
+                <div class="step-number">3</div>
+                <span>Payment</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Step 1: Table Selection -->
+            <div class="col-md-8" id="step1-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="bi bi-grid-3x3-gap"></i> Select a Table (Step 1)</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-layout">
+                            <!-- Row 1: Tables 1-4 -->
+                            <div class="row table-row">
+                                <div class="col-3" th:each="table : ${tables}" th:if="${table.number <= 4}">
+                                    <div class="table-card"
+                                         th:classappend="${table.status.name() == 'AVAILABLE'} ? 'available' : (${table.status.name() == 'OCCUPIED'} ? 'occupied' : (${table.status.name() == 'RESERVED'} ? 'reserved' : 'order'))"
+                                         th:data-table-id="${table.id}" 
+                                         th:data-table-number="${table.number}"
+                                         th:title="'Table ' + ${table.number} + ' - ' + (${table.status})"
+                                         onclick="selectTable(this)">
+                                        <h4 class="mb-2">
+                                            <i class="bi bi-table"></i> <span th:text="${table.number}">1</span>
+                                        </h4>
+                                        <span class="badge" 
+                                              th:class="${table.status.name() == 'AVAILABLE'} ? 'bg-success' : (${table.status.name() == 'OCCUPIED'} ? 'bg-warning' : (${table.status.name() == 'RESERVED'} ? 'bg-info' : 'bg-danger'))"
+                                              th:text="${table.status}">Available</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Row 2: Tables 5-8 -->
+                            <div class="row table-row">
+                                <div class="col-3" th:each="table : ${tables}" th:if="${table.number >= 5 and table.number <= 8}">
+                                    <div class="table-card"
+                                         th:classappend="${table.status.name() == 'AVAILABLE'} ? 'available' : (${table.status.name() == 'OCCUPIED'} ? 'occupied' : (${table.status.name() == 'RESERVED'} ? 'reserved' : 'order'))"
+                                         th:data-table-id="${table.id}" 
+                                         th:data-table-number="${table.number}"
+                                         th:title="'Table ' + ${table.number} + ' - ' + (${table.status})"
+                                         onclick="selectTable(this)">
+                                        <h4 class="mb-2">
+                                            <i class="bi bi-table"></i> <span th:text="${table.number}">5</span>
+                                        </h4>
+                                        <span class="badge" 
+                                              th:class="${table.status.name() == 'AVAILABLE'} ? 'bg-success' : (${table.status.name() == 'OCCUPIED'} ? 'bg-warning' : (${table.status.name() == 'RESERVED'} ? 'bg-info' : 'bg-danger'))"
+                                              th:text="${table.status}">Available</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Row 3: Tables 9-12 -->
+                            <div class="row table-row">
+                                <div class="col-3" th:each="table : ${tables}" th:if="${table.number >= 9 and table.number <= 12}">
+                                    <div class="table-card"
+                                         th:classappend="${table.status.name() == 'AVAILABLE'} ? 'available' : (${table.status.name() == 'OCCUPIED'} ? 'occupied' : (${table.status.name() == 'RESERVED'} ? 'reserved' : 'order'))"
+                                         th:data-table-id="${table.id}" 
+                                         th:data-table-number="${table.number}"
+                                         th:title="'Table ' + ${table.number} + ' - ' + (${table.status})"
+                                         onclick="selectTable(this)">
+                                        <h4 class="mb-2">
+                                            <i class="bi bi-table"></i> <span th:text="${table.number}">9</span>
+                                        </h4>
+                                        <span class="badge" 
+                                              th:class="${table.status.name() == 'AVAILABLE'} ? 'bg-success' : (${table.status.name() == 'OCCUPIED'} ? 'bg-warning' : (${table.status.name() == 'RESERVED'} ? 'bg-info' : 'bg-danger'))"
+                                              th:text="${table.status}">Available</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Menu Selection -->
+            <div class="col-md-8" id="step2-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="bi bi-list-ul"></i> Select Menu Items for Table <span id="selectedTableDisplay"></span> (Step 2)</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="row" id="menuItemsContainer">
+                                    <!-- Menu items will be loaded here -->
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>Order Cart</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="cartItems">
+                                            <p class="text-muted">No items selected</p>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between">
+                                            <strong>Total:</strong>
+                                            <strong id="cartTotal">$0.00</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Payment -->
+            <div class="col-md-8" id="step3-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="bi bi-credit-card"></i> Payment for Table <span id="paymentTableDisplay"></span> (Step 3)</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>Order Summary</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Table:</strong> <span id="orderSummaryTable"></span></p>
+                                        <div id="orderSummaryItems">
+                                            <!-- Order items will be shown here -->
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between">
+                                            <strong>Total Amount:</strong>
+                                            <strong id="orderTotal">$0.00</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>Payment Method</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="paymentMethod" id="cashPayment" value="cash" checked>
+                                            <label class="form-check-label" for="cashPayment">
+                                                Cash Payment
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="radio" name="paymentMethod" id="cardPayment" value="card">
+                                            <label class="form-check-label" for="cardPayment">
+                                                Card Payment
+                                            </label>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="notes" class="form-label">Order Notes (Optional)</label>
+                                            <textarea class="form-control" id="notes" rows="3" placeholder="Special instructions..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation and Action Buttons -->
+            <div class="col-md-4">
+                <div class="order-panel">
+                    <div id="step1-actions">
+                        <h5>Table Selection</h5>
+                        <p class="text-muted">Click on an available table to select it for ordering.</p>
+                        <button class="btn btn-primary w-100" onclick="nextStep()" id="nextStep1" disabled>
+                            <i class="bi bi-arrow-right"></i> Next: Select Menu Items
+                        </button>
+                    </div>
+
+                    <div id="step2-actions" style="display: none;">
+                        <h5>Menu Selection</h5>
+                        <p class="text-muted">Select menu items and add them to the cart.</p>
+                        <button class="btn btn-secondary w-100 mb-2" onclick="previousStep()">
+                            <i class="bi bi-arrow-left"></i> Previous: Select Table
+                        </button>
+                        <button class="btn btn-primary w-100" onclick="nextStep()" id="nextStep2" disabled>
+                            <i class="bi bi-arrow-right"></i> Next: Payment
+                        </button>
+                    </div>
+
+                    <div id="step3-actions" style="display: none;">
+                        <h5>Payment</h5>
+                        <p class="text-muted">Complete the order with payment.</p>
+                        <button class="btn btn-secondary w-100 mb-2" onclick="previousStep()">
+                            <i class="bi bi-arrow-left"></i> Previous: Menu Selection
+                        </button>
+                        <button class="btn btn-success w-100" onclick="completeOrder()" id="completeOrderBtn">
+                            <i class="bi bi-check-circle"></i> Complete Order
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Orders Section -->
+                <div class="row mt-4">
+                    <!-- Pending Orders -->
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header bg-warning text-white">
+                                <h5><i class="bi bi-clock"></i> Pending Orders</h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${#lists.isEmpty(pendingOrders)}" class="text-muted">
+                                    <i class="bi bi-inbox"></i> No pending orders
+                                </div>
+                                <div th:each="order : ${pendingOrders}" class="order-card pending">
+                                    <h6>Order #<span th:text="${order.id}"></span></h6>
+                                    <p class="mb-1">Table: <span th:text="${order.tableNumber}"></span></p>
+                                    <p class="mb-1">Items: <span th:text="${order.itemCount}"></span></p>
+                                    <p class="mb-2">Time: <span th:text="${order.formattedTime}"></span></p>
+                                    <button class="btn btn-sm btn-primary" th:onclick="|viewOrderDetails(${order.id})|">
+                                        <i class="bi bi-eye"></i> View Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ready Orders -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5><i class="bi bi-check-circle"></i> Ready Orders</h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${#lists.isEmpty(readyOrders)}" class="text-muted">
+                                    <i class="bi bi-inbox"></i> No ready orders
+                                </div>
+                                <div th:each="order : ${readyOrders}" class="order-card ready">
+                                    <h6>Order #<span th:text="${order.id}"></span></h6>
+                                    <p class="mb-1">Table: <span th:text="${order.tableNumber}"></span></p>
+                                    <p class="mb-1">Items: <span th:text="${order.itemCount}"></span></p>
+                                    <p class="mb-2">Time: <span th:text="${order.formattedTime}"></span></p>
+                                    <button class="btn btn-sm btn-success" th:onclick="|serveOrder(${order.id})|">
+                                        <i class="bi bi-truck"></i> Serve Order
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedTableId = null;
+        let selectedTableNumber = null;
+        let cart = [];
+        let currentStep = 1;
+
+        function selectTable(tableElement) {
+            // Check if table is available by looking for the 'available' class
+            if (!tableElement.classList.contains('available')) {
+                alert('This table is not available for ordering.');
+                return;
+            }
+
+            // Remove previous selection
+            document.querySelectorAll('.table-card').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Select new table
+            tableElement.classList.add('selected');
+            selectedTableId = tableElement.dataset.tableId;
+            selectedTableNumber = tableElement.dataset.tableNumber;
+            
+            // Enable next button
+            document.getElementById('nextStep1').disabled = false;
+        }
+
+        function nextStep() {
+            if (currentStep === 1) {
+                // Load menu items
+                loadMenuItems();
+                document.getElementById('step1-content').style.display = 'none';
+                document.getElementById('step2-content').style.display = 'block';
+                document.getElementById('step1-actions').style.display = 'none';
+                document.getElementById('step2-actions').style.display = 'block';
+                
+                document.getElementById('selectedTableDisplay').textContent = selectedTableNumber;
+                
+                // Update step indicators
+                document.getElementById('step1-indicator').classList.remove('active');
+                document.getElementById('step1-indicator').classList.add('completed');
+                document.getElementById('step2-indicator').classList.add('active');
+                
+                currentStep = 2;
+            } else if (currentStep === 2) {
+                // Show payment step
+                updateOrderSummary();
+                document.getElementById('step2-content').style.display = 'none';
+                document.getElementById('step3-content').style.display = 'block';
+                document.getElementById('step2-actions').style.display = 'none';
+                document.getElementById('step3-actions').style.display = 'block';
+                
+                document.getElementById('paymentTableDisplay').textContent = selectedTableNumber;
+                
+                // Update step indicators
+                document.getElementById('step2-indicator').classList.remove('active');
+                document.getElementById('step2-indicator').classList.add('completed');
+                document.getElementById('step3-indicator').classList.add('active');
+                
+                currentStep = 3;
+            }
+        }
+
+        function previousStep() {
+            if (currentStep === 2) {
+                document.getElementById('step2-content').style.display = 'none';
+                document.getElementById('step1-content').style.display = 'block';
+                document.getElementById('step2-actions').style.display = 'none';
+                document.getElementById('step1-actions').style.display = 'block';
+                
+                // Update step indicators
+                document.getElementById('step2-indicator').classList.remove('active');
+                document.getElementById('step1-indicator').classList.remove('completed');
+                document.getElementById('step1-indicator').classList.add('active');
+                
+                currentStep = 1;
+            } else if (currentStep === 3) {
+                document.getElementById('step3-content').style.display = 'none';
+                document.getElementById('step2-content').style.display = 'block';
+                document.getElementById('step3-actions').style.display = 'none';
+                document.getElementById('step2-actions').style.display = 'block';
+                
+                // Update step indicators
+                document.getElementById('step3-indicator').classList.remove('active');
+                document.getElementById('step2-indicator').classList.remove('completed');
+                document.getElementById('step2-indicator').classList.add('active');
+                
+                currentStep = 2;
+            }
+        }
+
+        function loadMenuItems() {
+            // Load menu items from server
+            fetch('/waiter/menu-items')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('menuItemsContainer');
+                    container.innerHTML = '';
+                    
+                    data.forEach(item => {
+                        const itemHtml = `
+                            <div class="col-md-6 mb-3">
+                                <div class="menu-item-card" onclick="addToCart(${item.id}, '${item.name}', ${item.price})">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">${item.name}</h6>
+                                            <p class="mb-1 text-muted">${item.description}</p>
+                                            <strong class="text-primary">$${item.price.toFixed(2)}</strong>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += itemHtml;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading menu items:', error);
+                    // Fallback menu items
+                    const fallbackItems = [
+                        { id: 1, name: 'Burger', description: 'Delicious beef burger', price: 12.99 },
+                        { id: 2, name: 'Pizza', description: 'Margherita pizza', price: 15.99 },
+                        { id: 3, name: 'Pasta', description: 'Spaghetti carbonara', price: 13.99 },
+                        { id: 4, name: 'Salad', description: 'Fresh garden salad', price: 8.99 },
+                        { id: 5, name: 'Soup', description: 'Tomato soup', price: 6.99 },
+                        { id: 6, name: 'Dessert', description: 'Chocolate cake', price: 5.99 }
+                    ];
+                    
+                    const container = document.getElementById('menuItemsContainer');
+                    container.innerHTML = '';
+                    
+                    fallbackItems.forEach(item => {
+                        const itemHtml = `
+                            <div class="col-md-6 mb-3">
+                                <div class="menu-item-card" onclick="addToCart(${item.id}, '${item.name}', ${item.price})">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">${item.name}</h6>
+                                            <p class="mb-1 text-muted">${item.description}</p>
+                                            <strong class="text-primary">$${item.price.toFixed(2)}</strong>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += itemHtml;
+                    });
+                });
+        }
+
+        function addToCart(itemId, itemName, itemPrice) {
+            const existingItem = cart.find(item => item.id === itemId);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    id: itemId,
+                    name: itemName,
+                    price: itemPrice,
+                    quantity: 1
+                });
+            }
+            
+            updateCart();
+        }
+
+        function updateCart() {
+            const cartContainer = document.getElementById('cartItems');
+            const totalElement = document.getElementById('cartTotal');
+            
+            if (cart.length === 0) {
+                cartContainer.innerHTML = '<p class="text-muted">No items selected</p>';
+                totalElement.textContent = '$0.00';
+                document.getElementById('nextStep2').disabled = true;
+                return;
+            }
+            
+            let total = 0;
+            cartContainer.innerHTML = '';
+            
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                
+                const itemHtml = `
+                    <div class="cart-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">${item.name}</h6>
+                                <p class="mb-0 text-muted">$${item.price.toFixed(2)} x ${item.quantity}</p>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm btn-outline-secondary me-2" onclick="updateQuantity(${item.id}, -1)">-</button>
+                                <span class="me-2">${item.quantity}</span>
+                                <button class="btn btn-sm btn-outline-secondary me-2" onclick="updateQuantity(${item.id}, 1)">+</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                cartContainer.innerHTML += itemHtml;
+            });
+            
+            totalElement.textContent = `$${total.toFixed(2)}`;
+            document.getElementById('nextStep2').disabled = false;
+        }
+
+        function updateQuantity(itemId, change) {
+            const item = cart.find(item => item.id === itemId);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(itemId);
+                } else {
+                    updateCart();
+                }
+            }
+        }
+
+        function removeFromCart(itemId) {
+            cart = cart.filter(item => item.id !== itemId);
+            updateCart();
+        }
+
+        function updateOrderSummary() {
+            document.getElementById('orderSummaryTable').textContent = selectedTableNumber;
+            
+            const summaryContainer = document.getElementById('orderSummaryItems');
+            const totalElement = document.getElementById('orderTotal');
+            
+            let total = 0;
+            summaryContainer.innerHTML = '';
+            
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                
+                const itemHtml = `
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>${item.name} x ${item.quantity}</span>
+                        <span>$${itemTotal.toFixed(2)}</span>
+                    </div>
+                `;
+                summaryContainer.innerHTML += itemHtml;
+            });
+            
+            totalElement.textContent = `$${total.toFixed(2)}`;
+        }
+
+        function completeOrder() {
+            if (cart.length === 0) {
+                alert('Please add at least one item to the cart before completing the order.');
+                return;
+            }
+
+            const orderData = {
+                tableId: selectedTableId,
+                tableNumber: selectedTableNumber,
+                items: cart,
+                paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value,
+                notes: document.getElementById('notes').value,
+                totalAmount: parseFloat(document.getElementById('orderTotal').textContent.replace('$', ''))
+            };
+            
+            // Submit order to server
+            fetch('/waiter/create-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Order created successfully! Order ID: ' + data.orderId);
+                    // Reset form and go back to step 1
+                    resetOrderForm();
+                    // Reload page to show new order
+                    location.reload();
+                } else {
+                    alert('Error creating order: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating order. Please try again.');
+            });
+        }
+
+        function resetOrderForm() {
+            selectedTableId = null;
+            selectedTableNumber = null;
+            cart = [];
+            currentStep = 1;
+            
+            // Reset UI
+            document.getElementById('step1-content').style.display = 'block';
+            document.getElementById('step2-content').style.display = 'none';
+            document.getElementById('step3-content').style.display = 'none';
+            
+            document.getElementById('step1-actions').style.display = 'block';
+            document.getElementById('step2-actions').style.display = 'none';
+            document.getElementById('step3-actions').style.display = 'none';
+            
+            document.getElementById('nextStep1').disabled = true;
+            document.getElementById('nextStep2').disabled = true;
+            
+            // Reset step indicators
+            document.getElementById('step1-indicator').classList.add('active');
+            document.getElementById('step1-indicator').classList.remove('completed');
+            document.getElementById('step2-indicator').classList.remove('active', 'completed');
+            document.getElementById('step3-indicator').classList.remove('active', 'completed');
+            
+            // Reset table selection
+            document.querySelectorAll('.table-card').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Reset form fields
+            document.getElementById('notes').value = '';
+            document.getElementById('cashPayment').checked = true;
+        }
+
+        function viewOrderDetails(orderId) {
+            // TODO: Implement view order details
+            window.location.href = '/waiter/orders/' + orderId + '/details';
+        }
+
+        function serveOrder(orderId) {
+            // TODO: Implement serve order logic
+            if (confirm('Mark order ' + orderId + ' as served?')) {
+                // Update order status to SERVED
+                alert('Order ' + orderId + ' marked as served');
+            }
+        }
+    </script>
+</body>
+</html> 

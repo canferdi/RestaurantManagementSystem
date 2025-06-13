@@ -6,6 +6,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "orders")
@@ -20,17 +21,24 @@ public class Order {
     @JoinColumn(name = "user_id")
     private Users user;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private List<OrderItem> orderItems;
+    @ManyToOne
+    @JoinColumn(name = "table_id")
+    private RestorantTable table;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @com.fasterxml.jackson.annotation.JsonManagedReference
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     private Double totalAmount;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private OrderStatus status = OrderStatus.PENDING;
 
-    @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date orderDate;
 
+    @Column(length = 500)
     private String deliveryAddress;
 
     @Column(length = 500)

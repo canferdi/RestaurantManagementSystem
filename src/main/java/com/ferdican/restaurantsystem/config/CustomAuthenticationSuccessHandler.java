@@ -24,8 +24,10 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
                 anyMatch(r -> r.getAuthority().equals("admin"));
         boolean hasWaiterRole = authentication.getAuthorities().stream().
                 anyMatch(r -> r.getAuthority().equals("waiter"));
+        boolean hasKitchenStaffRole = authentication.getAuthorities().stream().
+                anyMatch(r -> r.getAuthority().equals("kitchen staff"));
 
-        if (hasAdminRole || hasCustomerRole || hasWaiterRole) {
+        if (hasAdminRole || hasCustomerRole || hasWaiterRole || hasKitchenStaffRole) {
             response.sendRedirect("/dashboard/");
         }
     }

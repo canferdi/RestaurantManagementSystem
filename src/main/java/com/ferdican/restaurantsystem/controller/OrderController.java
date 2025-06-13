@@ -15,13 +15,13 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/admin/orders")
-public class AdminOrderController {
+@RequestMapping("/orders")
+public class OrderController {
 
     private final OrderService orderService;
 
     @Autowired
-    public AdminOrderController(OrderService orderService) {
+    public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
 
