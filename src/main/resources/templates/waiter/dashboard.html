@@ -715,7 +715,13 @@
                     // Reload page to show new order
                     location.reload();
                 } else {
-                    alert('Error creating order: ' + data.message);
+                    if (data.message && data.message.includes('Stock error')) {
+                        alert('Stock Error: ' + data.message + '\n\nPlease check available items and try again.');
+                        // Reload menu items to get updated stock
+                        loadMenuItems();
+                    } else {
+                        alert('Error creating order: ' + data.message);
+                    }
                 }
             })
             .catch(error => {

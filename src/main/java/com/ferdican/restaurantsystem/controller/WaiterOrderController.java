@@ -7,6 +7,7 @@ import com.ferdican.restaurantsystem.entity.RestorantTable;
 import com.ferdican.restaurantsystem.services.OrderService;
 import com.ferdican.restaurantsystem.services.TableService;
 import com.ferdican.restaurantsystem.services.MenuActivityService;
+import com.ferdican.restaurantsystem.services.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -27,12 +28,15 @@ public class WaiterOrderController {
     private final OrderService orderService;
     private final TableService tableService;
     private final MenuActivityService menuActivityService;
+    private final InventoryService inventoryService;
 
     @Autowired
-    public WaiterOrderController(OrderService orderService, TableService tableService, MenuActivityService menuActivityService) {
+    public WaiterOrderController(OrderService orderService, TableService tableService, 
+                               MenuActivityService menuActivityService, InventoryService inventoryService) {
         this.orderService = orderService;
         this.tableService = tableService;
         this.menuActivityService = menuActivityService;
+        this.inventoryService = inventoryService;
     }
 
     @GetMapping("/dashboard")
@@ -85,8 +89,9 @@ public class WaiterOrderController {
     @GetMapping("/menu-items")
     @ResponseBody
     public ResponseEntity<List<MenuItem>> getMenuItems() {
-        List<MenuItem> menuItems = menuActivityService.getAllMenuItems();
-        return ResponseEntity.ok(menuItems);
+        // Only return menu items that have stock available
+        List<MenuItem> availableMenuItems = inventoryService.getAvailableMenuItems();
+        return ResponseEntity.ok(availableMenuItems);
     }
 
     @PostMapping("/create-order")
@@ -138,7 +143,7 @@ public class WaiterOrderController {
 
             order.setOrderItems(orderItems);
 
-            // Save order
+            // Save order (this will check stock and reserve it)
             Order savedOrder = orderService.createOrder(order);
 
             // Update table status to OCCUPIED
@@ -151,6 +156,12 @@ public class WaiterOrderController {
                 "message", "Order created successfully"
             ));
 
+        } catch (IllegalStateException e) {
+            // Stock-related error
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Stock error: " + e.getMessage()
+            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
@@ -210,12 +221,4 @@ public class WaiterOrderController {
         return null;
     }
     */
-
-
-
-
-
-
-
-
 }

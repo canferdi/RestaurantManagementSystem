@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Inventory Management - Admin Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .inventory-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .inventory-card.low-stock {
+            border-left: 4px solid #ffc107;
+            background-color: #fff3cd;
+        }
+
+        .inventory-card.out-of-stock {
+            border-left: 4px solid #dc3545;
+            background-color: #f8d7da;
+        }
+
+        .inventory-card.normal-stock {
+            border-left: 4px solid #28a745;
+            background-color: #d4edda;
+        }
+
+        .stock-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .stock-indicator.low {
+            background-color: #ffc107;
+        }
+
+        .stock-indicator.out {
+            background-color: #dc3545;
+        }
+
+        .stock-indicator.normal {
+            background-color: #28a745;
+        }
+
+        .transaction-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .modal-xl {
+            max-width: 90%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2><i class="bi bi-boxes"></i> Inventory Management</h2>
+                <div class="mb-3">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createInventoryModal">
+                        <i class="bi bi-plus-circle"></i> Create New Inventory
+                    </button>
+                    <a href="/admin/inventory/transactions" class="btn btn-info">
+                        <i class="bi bi-clock-history"></i> View Transactions
+                    </a>
+                </div>
+                <hr>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div th:if="${error}" class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <span th:text="${error}"></span>
+        </div>
+
+        <div class="row">
+            <!-- Low Stock Items -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-warning text-white">
+                        <h5><i class="bi bi-exclamation-triangle"></i> Low Stock Items</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(lowStockItems)}" class="text-muted">
+                            <i class="bi bi-check-circle"></i> No low stock items
+                        </div>
+                        <div th:each="inventory : ${lowStockItems}" class="inventory-card low-stock">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="stock-indicator low"></span>
+                                        <span th:text="${inventory.menuItem.name}">Item Name</span>
+                                    </h6>
+                                    <p class="mb-1 text-muted">
+                                        Current: <strong th:text="${inventory.currentStock}">0</strong> | 
+                                        Minimum: <span th:text="${inventory.minimumStock}">0</span> | 
+                                        Maximum: <span th:text="${inventory.maximumStock}">0</span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-primary" th:onclick="|addStock(${inventory.menuItem.id})|">
+                                        <i class="bi bi-plus"></i> Add Stock
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Out of Stock Items -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h5><i class="bi bi-x-circle"></i> Out of Stock Items</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(outOfStockItems)}" class="text-muted">
+                            <i class="bi bi-check-circle"></i> No out of stock items
+                        </div>
+                        <div th:each="inventory : ${outOfStockItems}" class="inventory-card out-of-stock">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="stock-indicator out"></span>
+                                        <span th:text="${inventory.menuItem.name}">Item Name</span>
+                                    </h6>
+                                    <p class="mb-1 text-muted">
+                                        Current: <strong th:text="${inventory.currentStock}">0</strong> | 
+                                        Minimum: <span th:text="${inventory.minimumStock}">0</span> | 
+                                        Maximum: <span th:text="${inventory.maximumStock}">0</span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-success" th:onclick="|addStock(${inventory.menuItem.id})|">
+                                        <i class="bi bi-plus"></i> Add Stock
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Inventory -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-list-ul"></i> All Inventory Items</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Item Name</th>
+                                        <th>Category</th>
+                                        <th>Current Stock</th>
+                                        <th>Minimum Stock</th>
+                                        <th>Maximum Stock</th>
+                                        <th>Status</th>
+                                        <th>Last Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="inventory : ${allInventory}" 
+                                        th:class="${inventory.outOfStock} ? 'table-danger' : (${inventory.lowStock} ? 'table-warning' : 'table-success')">
+                                        <td th:text="${inventory.menuItem.name}">Item Name</td>
+                                        <td th:text="${inventory.menuItem.category}">Category</td>
+                                        <td>
+                                            <strong th:text="${inventory.currentStock}">0</strong>
+                                        </td>
+                                        <td th:text="${inventory.minimumStock}">0</td>
+                                        <td th:text="${inventory.maximumStock}">0</td>
+                                        <td>
+                                            <span th:if="${inventory.outOfStock}" class="badge bg-danger">Out of Stock</span>
+                                            <span th:if="${inventory.lowStock and !inventory.outOfStock}" class="badge bg-warning">Low Stock</span>
+                                            <span th:if="${!inventory.lowStock and !inventory.outOfStock}" class="badge bg-success">Normal</span>
+                                        </td>
+                                        <td th:text="${#temporals.format(inventory.lastUpdated, 'dd/MM/yyyy HH:mm')}">Date</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-sm btn-primary" th:onclick="|addStock(${inventory.menuItem.id})|">
+                                                    <i class="bi bi-plus"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-warning" th:onclick="|removeStock(${inventory.menuItem.id})|">
+                                                    <i class="bi bi-dash"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-info" th:onclick="|updateSettings(${inventory.menuItem.id})|">
+                                                    <i class="bi bi-gear"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Without Inventory -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="bi bi-question-circle"></i> Menu Items Without Inventory</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(menuItemsWithoutInventory)}" class="text-muted">
+                            <i class="bi bi-check-circle"></i> All menu items have inventory records
+                        </div>
+                        <div th:each="menuItem : ${menuItemsWithoutInventory}" class="inventory-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1" th:text="${menuItem.name}">Item Name</h6>
+                                    <p class="mb-1 text-muted" th:text="${menuItem.description}">Description</p>
+                                    <p class="mb-0 text-muted">Price: $<span th:text="${menuItem.price}">0.00</span></p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-success" th:onclick="|createInventory(${menuItem.id})|">
+                                        <i class="bi bi-plus-circle"></i> Create Inventory
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Inventory Modal -->
+    <div class="modal fade" id="createInventoryModal" tabindex="-1" aria-labelledby="createInventoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createInventoryModalLabel">Create New Inventory</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createInventoryForm">
+                        <div class="mb-3">
+                            <label for="menuItemId" class="form-label">Menu Item</label>
+                            <select class="form-select" id="menuItemId" required>
+                                <option value="">Select a menu item...</option>
+                                <option th:each="menuItem : ${menuItemsWithoutInventory}" 
+                                        th:value="${menuItem.id}" 
+                                        th:text="${menuItem.name + ' - $' + menuItem.price}">Menu Item</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="currentStock" class="form-label">Current Stock</label>
+                                    <input type="number" class="form-control" id="currentStock" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="minimumStock" class="form-label">Minimum Stock</label>
+                                    <input type="number" class="form-control" id="minimumStock" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="maximumStock" class="form-label">Maximum Stock</label>
+                                    <input type="number" class="form-control" id="maximumStock" min="0" required>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="submitCreateInventory()">Create Inventory</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Stock Modal -->
+    <div class="modal fade" id="addStockModal" tabindex="-1" aria-labelledby="addStockModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addStockModalLabel">Add Stock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addStockForm">
+                        <input type="hidden" id="addStockMenuItemId">
+                        <div class="mb-3">
+                            <label for="addStockQuantity" class="form-label">Quantity to Add</label>
+                            <input type="number" class="form-control" id="addStockQuantity" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addStockNotes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="addStockNotes" rows="3" placeholder="Reason for adding stock..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="submitAddStock()">Add Stock</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remove Stock Modal -->
+    <div class="modal fade" id="removeStockModal" tabindex="-1" aria-labelledby="removeStockModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="removeStockModalLabel">Remove Stock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="removeStockForm">
+                        <input type="hidden" id="removeStockMenuItemId">
+                        <div class="mb-3">
+                            <label for="removeStockQuantity" class="form-label">Quantity to Remove</label>
+                            <input type="number" class="form-control" id="removeStockQuantity" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="removeStockNotes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="removeStockNotes" rows="3" placeholder="Reason for removing stock..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="submitRemoveStock()">Remove Stock</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Settings Modal -->
+    <div class="modal fade" id="updateSettingsModal" tabindex="-1" aria-labelledby="updateSettingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateSettingsModalLabel">Update Inventory Settings</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="updateSettingsForm">
+                        <input type="hidden" id="updateSettingsMenuItemId">
+                        <div class="mb-3">
+                            <label for="updateMinimumStock" class="form-label">Minimum Stock</label>
+                            <input type="number" class="form-control" id="updateMinimumStock" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="updateMaximumStock" class="form-label">Maximum Stock</label>
+                            <input type="number" class="form-control" id="updateMaximumStock" min="0" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info" onclick="submitUpdateSettings()">Update Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function createInventory(menuItemId) {
+            document.getElementById('menuItemId').value = menuItemId;
+            new bootstrap.Modal(document.getElementById('createInventoryModal')).show();
+        }
+
+        function addStock(menuItemId) {
+            document.getElementById('addStockMenuItemId').value = menuItemId;
+            new bootstrap.Modal(document.getElementById('addStockModal')).show();
+        }
+
+        function removeStock(menuItemId) {
+            document.getElementById('removeStockMenuItemId').value = menuItemId;
+            new bootstrap.Modal(document.getElementById('removeStockModal')).show();
+        }
+
+        function updateSettings(menuItemId) {
+            document.getElementById('updateSettingsMenuItemId').value = menuItemId;
+            new bootstrap.Modal(document.getElementById('updateSettingsModal')).show();
+        }
+
+        function submitCreateInventory() {
+            const formData = {
+                menuItemId: document.getElementById('menuItemId').value,
+                currentStock: parseInt(document.getElementById('currentStock').value),
+                minimumStock: parseInt(document.getElementById('minimumStock').value),
+                maximumStock: parseInt(document.getElementById('maximumStock').value)
+            };
+
+            fetch('/admin/inventory/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Inventory created successfully!');
+                    location.reload();
+                } else {
+                    alert('Error creating inventory: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating inventory. Please try again.');
+            });
+        }
+
+        function submitAddStock() {
+            const formData = {
+                menuItemId: document.getElementById('addStockMenuItemId').value,
+                quantity: parseInt(document.getElementById('addStockQuantity').value),
+                notes: document.getElementById('addStockNotes').value
+            };
+
+            fetch('/admin/inventory/add-stock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Stock added successfully! New stock: ' + data.newStock);
+                    location.reload();
+                } else {
+                    alert('Error adding stock: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding stock. Please try again.');
+            });
+        }
+
+        function submitRemoveStock() {
+            const formData = {
+                menuItemId: document.getElementById('removeStockMenuItemId').value,
+                quantity: parseInt(document.getElementById('removeStockQuantity').value),
+                notes: document.getElementById('removeStockNotes').value
+            };
+
+            fetch('/admin/inventory/remove-stock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Stock removed successfully! New stock: ' + data.newStock);
+                    location.reload();
+                } else {
+                    alert('Error removing stock: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error removing stock. Please try again.');
+            });
+        }
+
+        function submitUpdateSettings() {
+            const formData = {
+                menuItemId: document.getElementById('updateSettingsMenuItemId').value,
+                minimumStock: parseInt(document.getElementById('updateMinimumStock').value),
+                maximumStock: parseInt(document.getElementById('updateMaximumStock').value)
+            };
+
+            fetch('/admin/inventory/update-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Settings updated successfully!');
+                    location.reload();
+                } else {
+                    alert('Error updating settings: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating settings. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html> 
