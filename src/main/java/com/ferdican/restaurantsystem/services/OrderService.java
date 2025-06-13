@@ -32,6 +32,12 @@ public class OrderService {
         return orderRepository.findOrdersByFilters(status, dateFrom, dateTo);
     }
 
+    public List<Order> getActiveOrders() {
+        return orderRepository.findByStatus(OrderStatus.PENDING);
+    }
+
+
+
     public Optional<Order> getOrderById(Long id) {
         return orderRepository.findById(id);
     }

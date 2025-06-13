@@ -21,4 +21,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("status") OrderStatus status,
             @Param("dateFrom") Date dateFrom,
             @Param("dateTo") Date dateTo);
-} 
+
+    List<Order> findByStatus(OrderStatus orderStatus);
+}

@@ -33,6 +33,9 @@ public class MenuActivityController {
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
             String currentUsername = authentication.getName();
             model.addAttribute("username", currentUsername);
+            if (authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("waiter"))) {
+                model.addAttribute("tables", new java.util.ArrayList<>());
+            }
         }
         model.addAttribute("user", currentUserProfile);
         return "dashboard";

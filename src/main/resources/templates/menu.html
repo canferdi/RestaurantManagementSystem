@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,12 +26,6 @@
             height: 200px;
             object-fit: cover;
         }
-        .cart-badge {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-        }
     </style>
 </head>
 <body>
@@ -49,8 +43,8 @@
                     <li class="nav-item">
                         <a class="nav-link active" href="/menu"><i class="fas fa-utensils"></i> Menu</a>
                     </li>
-                    <li class="nav-item" sec:authorize="hasAuthority('customer')">
-                        <a class="nav-link" href="/customer/orders/my-orders"><i class="fas fa-receipt"></i> My Orders</a>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/orders"><i class="fas fa-receipt"></i> My Orders</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
@@ -67,11 +61,9 @@
                         </a>
                     </li>
                     <li class="nav-item" sec:authorize="isAuthenticated()">
-                        <a class="nav-link position-relative" onclick="showCart()" sec:authorize="hasAuthority('customer')">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#cartModal">
                             <i class="fas fa-shopping-cart"></i> My Cart
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartBadge">
-                                0
-                            </span>
+                            <span class="badge bg-danger cart-count">0</span>
                         </a>
                     </li>
                     <li class="nav-item" sec:authorize="isAuthenticated()">
@@ -112,20 +104,12 @@
                                 <p class="card-text" th:text="${item.description}">Item Description</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="h5 mb-0" th:text="${#numbers.formatDecimal(item.price, 1, 0)} + '₺'">₺0</span>
-                                    <div class="d-flex justify-content-between align-items-center" sec:authorize="hasAuthority('customer')">
-                                        <div class="input-group" style="width: 130px;">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="decrementQuantity(this)">-</button>
-                                            <input type="number" class="form-control text-center" value="1" min="1" max="99" 
-                                                   th:data-item-id="${item.id}" th:data-item-price="${item.price}">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="incrementQuantity(this)">+</button>
-                                        </div>
-                                        <button class="btn btn-primary" onclick="addToCart(this)" 
-                                                th:data-item-id="${item.id}" 
-                                                th:data-item-name="${item.name}"
-                                                th:data-item-price="${item.price}">
-                                            Add to Cart
-                                        </button>
-                                    </div>
+                                    <button class="btn btn-primary add-to-cart" 
+                                            th:data-id="${item.id}"
+                                            th:data-name="${item.name}"
+                                            th:data-price="${item.price}">
+                                        <i class="fas fa-plus"></i> Add to Cart
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -161,49 +145,21 @@
 
     <!-- Cart Modal -->
     <div class="modal fade" id="cartModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Shopping Cart</h5>
+                    <h5 class="modal-title">My Cart</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
-                                    <th>Total</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="cartItems">
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                                    <td><strong id="cartTotal">₺0.00</strong></td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <form id="orderForm" class="mt-3">
-                        <div class="mb-3">
-                            <label for="deliveryAddress" class="form-label">Delivery Address</label>
-                            <textarea class="form-control" id="deliveryAddress" rows="2" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">Notes</label>
-                            <textarea class="form-control" id="notes" rows="2"></textarea>
-                        </div>
-                    </form>
+                    <div id="modal-cart-items"></div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-danger me-auto" onclick="clearCart()">
+                        <i class="fas fa-trash-alt"></i> Clear Cart
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="placeOrder()">Place Order</button>
+                    <button type="button" class="btn btn-primary" id="modal-checkout-btn">Complete Order</button>
                 </div>
             </div>
         </div>
@@ -375,126 +331,6 @@
                     cartModal.hide();
                 }
             }
-        }
-
-        function incrementQuantity(button) {
-            const input = button.parentElement.querySelector('input');
-            input.value = parseInt(input.value) + 1;
-        }
-
-        function decrementQuantity(button) {
-            const input = button.parentElement.querySelector('input');
-            if (parseInt(input.value) > 1) {
-                input.value = parseInt(input.value) - 1;
-            }
-        }
-
-        function addToCart(button) {
-            const itemId = button.dataset.itemId;
-            const itemName = button.dataset.itemName;
-            const itemPrice = parseFloat(button.dataset.itemPrice);
-            const quantity = parseInt(button.parentElement.querySelector('input').value);
-
-            const existingItem = cart.find(item => item.id === itemId);
-            if (existingItem) {
-                existingItem.quantity += quantity;
-            } else {
-                cart.push({
-                    id: itemId,
-                    name: itemName,
-                    price: itemPrice,
-                    quantity: quantity
-                });
-            }
-
-            updateCartBadge();
-            showCart();
-        }
-
-        function updateCartBadge() {
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('cartBadge').textContent = totalItems;
-        }
-
-        function showCart() {
-            updateCartTable();
-            new bootstrap.Modal(document.getElementById('cartModal')).show();
-        }
-
-        function updateCartTable() {
-            const tbody = document.getElementById('cartItems');
-            tbody.innerHTML = '';
-            let total = 0;
-
-            cart.forEach((item, index) => {
-                const row = document.createElement('tr');
-                const itemTotal = item.price * item.quantity;
-                total += itemTotal;
-
-                row.innerHTML = `
-                    <td>${item.name}</td>
-                    <td>₺${item.price.toFixed(2)}</td>
-                    <td>${item.quantity}</td>
-                    <td>₺${itemTotal.toFixed(2)}</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-
-            document.getElementById('cartTotal').textContent = `₺${total.toFixed(2)}`;
-        }
-
-        function placeOrder() {
-            if (cart.length === 0) {
-                alert('Your cart is empty!');
-                return;
-            }
-
-            const deliveryAddress = document.getElementById('deliveryAddress').value;
-            if (!deliveryAddress) {
-                alert('Please enter a delivery address');
-                return;
-            }
-
-            const orderData = {
-                items: cart.map(item => ({
-                    menuItemId: item.id,
-                    quantity: item.quantity,
-                    price: item.price
-                })),
-                deliveryAddress: deliveryAddress,
-                notes: document.getElementById('notes').value,
-                totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-            };
-
-            fetch('/customer/orders/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(orderData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert('Order placed successfully!');
-                cart = [];
-                updateCartBadge();
-                bootstrap.Modal.getInstance(document.getElementById('cartModal')).hide();
-                document.getElementById('orderForm').reset();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error placing order. Please try again.');
-            });
         }
     </script>
 </body>
